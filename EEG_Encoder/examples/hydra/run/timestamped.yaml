@@ -1,0 +1,5 @@
+# Hydra run directory configuration
+# Configures where Hydra saves outputs and logs
+
+# Save outputs to a timestamped directory
+dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}

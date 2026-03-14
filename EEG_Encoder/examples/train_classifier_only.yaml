@@ -1,0 +1,46 @@
+# Pure supervised classifier training (no CLIP loss)
+# Usage: python EEG_Encoder/run_CLIPtraining.py --config-name=train_classifier_only
+
+defaults:
+  - base
+  - _self_
+
+# ============================================================================
+# DATA AUGMENTATION
+# ============================================================================
+augmentation:
+  train:
+    enable: false
+    normalization_method: "random"
+    zscore_epsilon: 1.0e-8
+    amplitude_fluctuation_enable: true
+    amplitude_fluctuation_range: [0.9, 1.1]
+  test:
+    enable: false
+    normalization_method: "zscore_global"
+    zscore_epsilon: 1.0e-8
+
+experiment:
+  models: ['ATMSmodify']
+  datasets: ['ImageNetEEG']  # Good starting point (6-class classification)
+  # gpu_number: ['all'] inherited from base
+  limit_sample: 7960
+
+training:
+  DEFAULT_EPOCHS: 30
+  DEFAULT_BATCH_SIZE: 512
+  DEFAULT_LEARNING_RATE: 1.0e-3
+
+classifier:
+  lambda_clip: 0.0  # Pure classification, no CLIP loss (classifier auto-enabled)
+  use_simple_head: false  # Use MLP classifier for better capacity
+  hidden_dim: 512
+  dropout: 0.5
+  label_smoothing: 0.2
+
+modes:
+  save_model: false
+
+features:
+  use_shm: true
+  auto_clean_shm_when_exit: false

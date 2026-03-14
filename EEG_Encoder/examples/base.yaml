@@ -1,0 +1,413 @@
+# Base configuration for WaveMind EEG Training
+# This file contains all default values and comprehensive documentation for all configuration options
+
+defaults:
+  - _self_
+
+# Hydra runtime configuration
+hydra:
+  output_subdir: null  # Disable .hydra/ directory creation
+  run:
+    dir: .  # Keep running in current directory
+  job:
+    chdir: false  # Don't change working directory
+
+# ============================================================================
+# TRAINING HYPERPARAMETERS
+# ============================================================================
+training:
+  # Batch size per device (default: 512)
+  # - Effective batch size = DEFAULT_BATCH_SIZE × num_gpus × ACCUMULATE_GRAD_BATCHES
+  # - For multi-GPU: Batch is split across GPUs
+  # - Typical values: 256, 512, 1024
+  DEFAULT_BATCH_SIZE: 512
+
+  # Maximum training epochs (default: 30)
+  # - Training may stop earlier with early stopping
+  # - Set higher (50-100) for complex models or large datasets
+  DEFAULT_EPOCHS: 30
+
+  # Learning rate (default: 1.0e-5)
+  # - 1.0e-5: CLIP contrastive learning (recommended)
+  # - 5.0e-5: Pure supervised classifier training
+  # - 3.0e-5: Joint CLIP + classifier training
+  DEFAULT_LEARNING_RATE: 1.0e-5
+
+  # DataLoader workers (default: 64)
+  # - 64: Recommended for shared memory mode (use_shm=true, default)
+  # - Set lower (16) if not using shared memory
+  # - Set lower (4-8) for limited CPU/RAM
+  # - Rule of thumb: 2-4 workers per GPU
+  DEFAULT_NUM_WORKERS: 32
+
+  # Gradient accumulation batches (default: 2)
+  # - Simulates larger batch size without increasing memory
+  # - Effective batch = DEFAULT_BATCH_SIZE × ACCUMULATE_GRAD_BATCHES
+  # - Example: 512 × 2 = 1024 effective batch size
+  ACCUMULATE_GRAD_BATCHES: 2
+
+  # Gradient clipping value (default: 1.0)
+  # - Prevents exploding gradients
+  # - 0.0 = no clipping, 1.0 = typical value, 5.0 = more lenient
+  GRADIENT_CLIP_VAL: 1.0
+
+  # Training precision (default: "32-true")
+  # - "32-true": Full 32-bit precision (most stable)
+  # - "16-mixed": Mixed precision (faster, less memory, may be unstable)
+  # - "bf16-mixed": BFloat16 mixed precision (requires Ampere GPUs)
+  PRECISION: "32-true"
+
+  # Logging frequency (default: 5)
+  # - Log metrics every N training steps
+  # - Lower = more frequent logging (larger log files)
+  LOG_EVERY_N_STEPS: 5
+
+  # Validation frequency (default: 5)
+  # - Run validation every N epochs
+  # - Lower = more frequent validation (slower training)
+  CHECK_VAL_EVERY_N_EPOCH: 5
+
+  # Sanity validation steps (default: 0)
+  # - Number of validation steps before training starts
+  # - 0 = skip sanity check, 1-2 = quick sanity check
+  NUM_SANITY_VAL_STEPS: 0
+
+  # Early stopping patience (default: 10)
+  # - Stop training if validation loss doesn't improve for N epochs
+  # - Higher = more patient, lower = stops earlier
+  EARLY_STOP_PATIENCE: 10
+
+  # Early stopping minimum delta (default: 0.0)
+  # - Minimum improvement to consider as "improvement"
+  # - 0.0 = any improvement counts
+  # - 0.001 = must improve by at least 0.001
+  EARLY_STOP_MIN_DELTA: 0.0
+
+  # Early stopping mode (default: 'min')
+  # - 'min': Lower validation loss is better
+  # - 'max': Higher validation accuracy is better
+  EARLY_STOP_MODE: 'min'
+
+# ============================================================================
+# FILE PATHS AND DIRECTORIES
+# ============================================================================
+paths:
+  # Root path from environment variable (required)
+  # - Set via: export WaveMind_ROOT_PATH_=/path/to/WaveMind
+  # - Fallback to current directory if not set
+  ROOT_PATH: ${oc.env:WaveMind_ROOT_PATH_,.}
+
+  # Data directory (auto-configured from ROOT_PATH)
+  DATA_DIR: ${paths.ROOT_PATH}/data/Total
+
+  # HDF5 dataset file (preprocessed EEG data)
+  # - Must exist before training
+  # - Generated via: ./data/preprocess_wavemind_dataset.sh
+  HDF5_PATH: ${paths.DATA_DIR}/data_label.h5
+
+  # CLIP ground truth features directory
+  # - Pre-computed CLIP embeddings for RAG
+  # - Generated via: python data/create_dataset_pkl.py
+  CLIP_GROUND_TRUTH_DIR: ${paths.DATA_DIR}/CLIP_groundTruth
+
+  # Model checkpoint directory
+  # - Saved models stored here
+  CHECKPOINT_DIR: ${paths.ROOT_PATH}/EEG_Encoder/Resource/Checkpoint
+
+  # Unified logs directory
+  # - SwanLab logs: ${LOGS_DIR}/swanlog/
+  # - Lightning logs: ${LOGS_DIR}/lightning_logs/
+  # - Default: EEG_Encoder/Resource/logs
+  # - Override: paths.LOGS_DIR=/custom/path
+  LOGS_DIR: ${paths.ROOT_PATH}/EEG_Encoder/Resource/logs
+
+  # Shared memory directory (for advanced use)
+  # - Used when features.use_shm=true
+  # - Faster I/O but requires sufficient /dev/shm space
+  SHM_DIR: /dev/shm
+
+  # Shared memory buffer ratio (default: 0.8)
+  # - Reserve 20% safety buffer
+  # - Prevents out-of-memory errors
+  SHM_AVAILABLE_BUFFER_RATIO: 0.8
+
+# Note: EEG signal parameters (sample rate, channels), metrics configuration,
+# and HDF5 settings are defined in EEG_Encoder/Config/training_config.py
+# and imported as Python modules. This YAML controls runtime hyperparameters only.
+
+# ============================================================================
+# DATA AUGMENTATION
+# ============================================================================
+augmentation:
+  # Training split augmentation
+  train:
+    # Enable augmentation for training (default: false)
+    # - Recommended: true for better generalization
+    enable: false
+
+    # Normalization method (default: "random")
+    # Available methods:
+    # - "random": Randomly selects from 5 methods (identity, zscore_global, std_global, zscore_channel, std_channel)
+    # - "zscore_global": Z-score across all channels/timepoints (mean=0, std=1)
+    # - "zscore_channel": Z-score per channel independently
+    # - "std_global": Scale global std to 1 (preserve mean)
+    # - "std_channel": Scale channel-wise std to 1 (preserve mean)
+    # - "identity": No normalization
+    normalization_method: "random"
+
+    # Epsilon for z-score normalization (default: 1.0e-8)
+    # - Prevents division by zero
+    zscore_epsilon: 1.0e-8
+
+    # Amplitude fluctuation (default: true)
+    # - Randomly scales amplitude to simulate variations
+    amplitude_fluctuation_enable: true
+
+    # Amplitude fluctuation range (default: [0.9, 1.1])
+    # - [0.9, 1.1] = 90%-110% of original amplitude
+    # - [0.8, 1.2] = more aggressive augmentation
+    amplitude_fluctuation_range: [0.9, 1.1]
+
+  # Test/validation split (deterministic)
+  test:
+    # Enable deterministic normalization (default: true)
+    # - Recommended: true for consistent evaluation
+    enable: true
+
+    # Normalization method (default: "zscore_global")
+    # - Should be deterministic (not "random")
+    # - Recommended: "zscore_global" for consistency
+    normalization_method: "zscore_global"
+
+    # Epsilon for z-score normalization
+    zscore_epsilon: 1.0e-8
+
+# ============================================================================
+# EXPERIMENT CONFIGURATION
+# ============================================================================
+experiment:
+  # EEG encoder models (list format)
+  # Available models:
+  # - ATMSmodify: Attention-based Temporal-Mixture-Subject Modified (default, recommended)
+  # - ATMS: Original Attention-based Temporal-Mixture-Subject
+  # - NICE: Network In Channel Evolution
+  # - MLP: Simple Multi-Layer Perceptron projector
+  # - channelNet: Channel-based network
+  # - EEGITNet: EEG Inception Time Network
+  # - ShallowFBCSPNet: Shallow Filter Bank Common Spatial Pattern Network
+  # - ATCNet: Attention Temporal Convolutional Network
+  # - EEGConformer: Conformer-based EEG encoder
+  # - NeuroLM-B: NeuroLM Base (requires pretrained checkpoint, 200Hz)
+  # - NeuroLM-L: NeuroLM Large (requires pretrained checkpoint, 200Hz)
+  # - CBraMod: Cross-Brain Modulation (requires pretrained checkpoint, 200Hz)
+  # - CSBrain: Cross-Subject Brain encoder (200Hz)
+  #
+  # Usage:
+  # - Single model: [ATMSmodify]
+  # - Multiple models: [ATMSmodify, NICE, ATMS]
+  models: [ATMSmodify]
+
+  # Datasets to use (list format)
+  # Available datasets:
+  # - all: Use all available datasets (THING-EEG, ImageNet-EEG, TUEV, TUAB, SEED)
+  # - thingEEG: THING-EEG visual object recognition (1,773 categories, 10 subjects)
+  # - ImageNetEEG: ImageNet EEG image categories (40 categories, 6 subjects)
+  # - TUEV: TU EEG Event classification (6 event types: SPSW, GPED, PLED, EYEM, ARTF, BCKG)
+  # - TUAB: TU EEG Abnormality detection (2 classes: normal, abnormal)
+  # - SEED: Emotion recognition (3 emotions: positive, negative, neutral, 15 subjects)
+  # - thing_specific: THING-EEG with specific subject selection (use with advanced.thing_specific_sub)
+  #
+  # Excluded datasets (not used by default):
+  # - SEED-IV, FACE, BCICIV2a, HMC, P2018, Siena
+  #
+  # Usage:
+  # - All datasets: [all]
+  # - Single dataset: [TUEV]
+  # - Multiple datasets: [ImageNetEEG, SEED, TUEV]
+  datasets: [all]
+
+  # GPU selection (list format)
+  # Available options:
+  # - ['all']: Auto-detect and use ALL available GPUs (default, recommended for training)
+  # - ['auto']: Auto-select single GPU with lowest utilization
+  # - ['0']: Use single GPU (device 0)
+  # - ['1']: Use single GPU (device 1)
+  # - ['0', '1', '2', '3']: Use specific multiple GPUs (manual selection)
+  #
+  # Usage:
+  # - Training with all GPUs: ['all']
+  # - Training with specific GPUs: ['0', '1']
+  # - Evaluation (single GPU): ['0']
+  # - Auto-select best GPU: ['auto']
+  #
+  # Note: Multi-GPU training uses DDP (DistributedDataParallel) strategy
+  gpu_number: ['all']
+
+  # Limit samples per dataset (optional)
+  # - null: Use all available samples (default)
+  # - 1000: Limit to 1000 samples per dataset (for quick testing)
+  # - Useful for debugging or quick experiments
+  limit_sample: null
+
+# ============================================================================
+# TRAINING MODES
+# ============================================================================
+modes:
+  # Subject Dependent evaluation only (default: false)
+  # - true: Skip training, only evaluate on Subject Dependent test set
+  # - Requires: advanced.model_checkpoint_name
+  # - Cannot be true simultaneously with only_evaluate_SI
+  only_evaluate_SD: false
+
+  # Subject Independent evaluation only (default: false)
+  # - true: Skip training, only evaluate on Subject Independent test set
+  # - Requires: advanced.model_checkpoint_name
+  # - Cannot be true simultaneously with only_evaluate_SD
+  only_evaluate_SI: false
+
+  # Save model checkpoint after training (default: false)
+  # - true: Save checkpoint to CHECKPOINT_DIR/ALL/
+  # - false: Don't save (useful for quick experiments)
+  # - Recommended: true for final training runs
+  save_model: false
+
+# ============================================================================
+# FEATURE FLAGS
+# ============================================================================
+features:
+  # Use shared memory for HDF5 file (default: true)
+  # - true: Copy HDF5 to /dev/shm for faster I/O (recommended, default)
+  # - false: Load HDF5 from disk (slower, use if /dev/shm space is limited)
+  # - Requires: Sufficient /dev/shm space (~10-50GB)
+  # - Benefits: Faster data loading for multi-GPU training
+  use_shm: true
+
+  # Use dynamic sampling for imbalanced datasets (default: true)
+  # - true: Oversample minority classes during training (recommended, default)
+  # - false: Standard sampling (use for balanced datasets)
+  use_dynamic_sampling: true
+
+
+  # Automatically clean shared memory on exit (default: true)
+  # - true: Delete HDF5 from /dev/shm when script exits (recommended, default)
+  # - false: Keep HDF5 in /dev/shm (may fill up shared memory)
+  # - Only applies when use_shm=true
+  auto_clean_shm_when_exit: true
+
+# ============================================================================
+# EXPERIMENT LOGGING CONFIGURATION
+# ============================================================================
+logger:
+  # Logger type (default: "none")
+  # Available options:
+  # - "none": Disable experiment tracking (default)
+  # - "comet": Use CometML for experiment tracking
+  # - "swanlab": Use SwanLab for experiment tracking
+  type: "none"
+
+  # Note: Project name is always "wavemind" (hardcoded, lowercase)
+
+  # Experiment name/run name (optional)
+  # - null: Auto-generate from all models + all datasets + timestamp
+  #   Example: "ATMSmodify_NICE_ImageNetEEG_SEED_1736511234"
+  # - "my_experiment": Custom experiment name
+  experiment_name: null
+
+  # Log save directory (optional)
+  # - null: Use paths.LOGS_DIR (recommended, default)
+  # - "/custom/path": Per-experiment override
+  # - SwanLab logs → ${save_dir}/swanlog/
+  # - Lightning logs → ${save_dir}/lightning_logs/
+  save_dir: null
+
+# ============================================================================
+# ADVANCED SETTINGS
+# ============================================================================
+advanced:
+  # Model checkpoint path for evaluation or resuming (optional)
+  # - null: Train from scratch (default)
+  # - "/absolute/path/to/checkpoint.pth": Absolute path
+  # - "./relative/path/checkpoint.pth": Relative path
+  # - "model.pth": Filename only (searches in CHECKPOINT_DIR)
+  #
+  # Required when: modes.only_evaluate_SD=true or modes.only_evaluate_SI=true
+  #
+  # Usage:
+  # - Evaluation: advanced.model_checkpoint_name=/path/to/trained_model.pth
+  # - Resume training: Load checkpoint weights and continue training
+  model_checkpoint_name: null
+
+  # THING-EEG specific subject selection (default: [sub-01])
+  # - Only applies when experiment.datasets includes 'thing_specific'
+  # - Available subjects: sub-01, sub-02, sub-03, sub-04, sub-05, sub-06, sub-07, sub-08, sub-09
+  #
+  # Usage:
+  # - Single subject: [sub-01]
+  # - Multiple subjects: [sub-01, sub-02, sub-03]
+  thing_specific_sub: [sub-01]
+
+# ============================================================================
+# CLASSIFIER TRAINING CONFIGURATION
+# ============================================================================
+classifier:
+  # Loss weighting between CLIP and classifier (default: 1.0)
+  # - 1.0: Pure CLIP contrastive learning (classifier disabled)
+  # - 0.5: Joint CLIP + Classifier (50/50 weighting)
+  # - 0.0: Pure supervised classifier (CLIP disabled)
+  #
+  # Classifier is automatically enabled when lambda_clip < 1.0
+  #
+  # Usage:
+  # - CLIP only: lambda_clip=1.0 (recommended for pre-training)
+  # - Joint training: lambda_clip=0.5
+  # - Supervised only: lambda_clip=0.0
+  #
+  # Loss formula: L = lambda_clip × L_CLIP + (1 - lambda_clip) × L_classifier
+  lambda_clip: 1.0
+
+  # Hidden dimension for MLP classifier (default: 512)
+  # - Only applies when use_simple_head=false
+  # - Typical values: 256, 512, 1024
+  hidden_dim: 512
+
+  # Dropout rate for classifier (default: 0.5)
+  # - Prevents overfitting
+  # - 0.0 = no dropout, 0.5 = typical value, 0.7 = aggressive regularization
+  dropout: 0.5
+
+  # Use simple classifier head (default: true)
+  # - true: Simple head (LayerNorm + Linear) - faster, fewer parameters
+  # - false: MLP head (Linear + ReLU + Dropout + Linear) - more capacity
+  #
+  # Recommended:
+  # - true: For small datasets or when CLIP is primary objective
+  # - false: For pure supervised learning (lambda_clip=0.0)
+  use_simple_head: true
+
+  # Label smoothing factor (default: 0.2)
+  # - Prevents overconfidence, improves generalization
+  # - 0.0 = no smoothing, 0.1 = light smoothing, 0.2 = typical value
+  label_smoothing: 0.2
+
+  # Dataset class counts (auto-detected, can override)
+  # - Used to configure classifier output dimension
+  # - Automatically detected from dataset, manual override rarely needed
+  #
+  # Known class counts:
+  # - TUAB: 2 (normal, abnormal)
+  # - TUEV: 6 (SPSW, GPED, PLED, EYEM, ARTF, BCKG)
+  # - SEED: 3 (positive, negative, neutral)
+  # - SEED-IV: 4 (happiness, sadness, fear, neutral)
+  # - BCICIV2a: 4 (left hand, right hand, feet, tongue)
+  # - FACE: 9 (9 face categories)
+  # - thingEEG: 1654 (1,573 training + 81 test categories)
+  # - ImageNetEEG: 40 (40 visual categories)
+  dataset_n_class:
+    TUAB: 2
+    TUEV: 6
+    SEED: 3
+    SEED-IV: 4
+    BCICIV2a: 4
+    FACE: 9
+    thingEEG: 1654
+    ImageNetEEG: 40

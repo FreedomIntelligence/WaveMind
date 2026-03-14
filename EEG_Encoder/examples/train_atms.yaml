@@ -1,0 +1,56 @@
+# Quick start configuration for ATMSmodify training
+# Usage: python EEG_Encoder/run_CLIPtraining.py --config-name=train_atms
+
+defaults:
+  - base
+  - _self_
+
+# ============================================================================
+# DATA AUGMENTATION
+# ============================================================================
+augmentation:
+  train:
+    enable: true
+    normalization_method: "random"
+    zscore_epsilon: 1.0e-8
+    amplitude_fluctuation_enable: true
+    amplitude_fluctuation_range: [0.9, 1.1]
+  test:
+    enable: false
+    normalization_method: "std_global"
+    zscore_epsilon: 1.0e-8
+
+experiment:
+  models: ['ATMSmodify']
+  # datasets: ['all']
+  datasets: ['thingEEG','TUAB','ImageNetEEG','TUEV','SEED']
+  # datasets: ['ImageNetEEG']
+  gpu_number: ['3']
+  # limit_sample: 1e5
+
+training:
+  DEFAULT_EPOCHS: 30
+  DEFAULT_BATCH_SIZE: 2048
+  DEFAULT_NUM_WORKERS: 64
+  DEFAULT_LEARNING_RATE: 1e-3
+  ACCUMULATE_GRAD_BATCHES: 2
+
+modes:
+  save_model: true
+
+paths:
+  HDF5_PATH: ${paths.DATA_DIR}/data_label.h5
+
+features:
+  use_shm: true
+  auto_clean_shm_when_exit: false
+  use_dynamic_sampling: true
+
+
+logger:
+  type: "swanlab"
+  # type: "none"
+
+# advanced:
+#   model_checkpoint_name: ${paths.CHECKPOINT_DIR}/ALL/ATMSmodify_original.pth
+

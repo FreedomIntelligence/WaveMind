@@ -1,0 +1,51 @@
+# Quick start configuration for joint CLIP + Classifier training
+# Usage: python EEG_Encoder/run_CLIPtraining.py --config-name=train_classifier
+
+defaults:
+  - base
+  - _self_
+
+# ============================================================================
+# DATA AUGMENTATION
+# ============================================================================
+augmentation:
+  train:
+    enable: false
+    normalization_method: "random"
+    zscore_epsilon: 1.0e-8
+    amplitude_fluctuation_enable: true
+    amplitude_fluctuation_range: [0.9, 1.1]
+  test:
+    enable: true
+    normalization_method: "zscore_global"
+    zscore_epsilon: 1.0e-8
+
+experiment:
+  models: [ATMSmodify]
+  datasets: [all]  # Use all datasets (TUAB, TUEV, SEED, ImageNetEEG, thingEEG)
+  # gpu_number: ['all'] inherited from base
+
+training:
+  DEFAULT_EPOCHS: 30
+  DEFAULT_BATCH_SIZE: 512
+  DEFAULT_LEARNING_RATE: 1.0e-5  # May need tuning for joint training
+
+# Enable classifier training with 50/50 CLIP-classifier balance
+# Classifier automatically enabled because lambda_clip < 1.0
+classifier:
+  lambda_clip: 0.5  # Equal weighting
+  use_simple_head: true
+  dropout: 0.5
+  label_smoothing: 0.2
+
+modes:
+  save_model: true
+
+features:
+  use_shm: true
+  auto_clean_shm_when_exit: false
+
+# Override examples:
+# Pure classifier: --config-name=train_classifier classifier.lambda_clip=0.0
+# CLIP-heavy: --config-name=train_classifier classifier.lambda_clip=0.8
+# Specific dataset: --config-name=train_classifier experiment.datasets=[TUEV]

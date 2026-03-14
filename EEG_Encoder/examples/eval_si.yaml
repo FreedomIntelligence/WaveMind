@@ -1,0 +1,46 @@
+# Subject Independent (SI) evaluation configuration
+# Usage: python EEG_Encoder/run_CLIPtraining.py --config-name=eval_si 
+
+defaults:
+  - base
+  - _self_
+
+# ============================================================================
+# DATA AUGMENTATION
+# ============================================================================
+augmentation:
+  train:
+    enable: false
+    normalization_method: "random"
+    zscore_epsilon: 1.0e-8
+    amplitude_fluctuation_enable: true
+    amplitude_fluctuation_range: [0.9, 1.1]
+  test:
+    enable: false
+    normalization_method: "zscore_global"
+    zscore_epsilon: 1.0e-8
+
+experiment:
+  models: [ATMSmodify]
+  datasets: ['thingEEG','TUAB','ImageNetEEG','TUEV','SEED',]
+  gpu_number: ['0']  # Evaluation typically uses single GPU
+
+modes:
+  only_evaluate_SD: false
+  only_evaluate_SI: true
+  save_model: false
+
+
+advanced:
+  model_checkpoint_name: ${paths.CHECKPOINT_DIR}/ALL/ATMSmodify_original.pth
+features:
+  use_shm: true
+  auto_clean_shm_when_exit: false
+
+paths:
+  HDF5_PATH: ${paths.DATA_DIR}/data_label_original_new.h5
+
+# Example usage:
+# python EEG_Encoder/run_CLIPtraining.py --config-name=eval_si \
+#   advanced.model_checkpoint_name=/path/to/model.pth \
+#   experiment.datasets=[ImageNetEEG]

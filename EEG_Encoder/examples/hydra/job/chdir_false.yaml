@@ -1,0 +1,5 @@
+# Hydra job configuration
+# This configures Hydra's runtime behavior
+
+# Don't change working directory (CRITICAL for backward compatibility)
+chdir: false
