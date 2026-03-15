@@ -531,8 +531,6 @@ def save_model_checkpoint(model, model_name, dataset, cfg: DictConfig):
 
 @hydra.main(version_base=None, config_path="examples", config_name=None)
 def main(cfg: DictConfig) -> None:
-    rank_zero_info(8888)
-
 
     # Validate configuration
     validate_config(cfg)
