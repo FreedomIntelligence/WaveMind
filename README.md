@@ -343,8 +343,7 @@ This project is released under the [Apache License 2.0](./LICENSE). We welcome t
 
 ## More...
 <div style="text-align: center;">
-Thank you for your attention to our project, any question feel free to open the issue！<br>
-感谢你关注我们的项目,任何问题请开issue进行讨论！<br>
+Thank you for your attention to our project, any question feel free to open the issue!
 
 </div>
 

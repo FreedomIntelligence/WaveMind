@@ -1,56 +1,56 @@
-# WaveMind数据处理文档
+# WaveMind Data Processing Documentation
 
-## 📂 文件树结构
+## 📂 File Tree Structure
 ```bash
 /WaveMind_ROOT_PATH_
 ├── data
 │   ├── ImageNetEEG
-│   │   ├── eeg_signals_raw_with_mean_std.pth  # 原始数据需下载
-│   │   ├── Image/                              # 原始图像需下载
-│   │   └── process.py                          # 预处理脚本
+│   │   ├── eeg_signals_raw_with_mean_std.pth  # Raw data needs to be downloaded
+│   │   ├── Image/                              # Raw images need to be downloaded
+│   │   └── process.py                          # Preprocessing script
 │   ├── SEED
-│   │   ├── Preprocessed_EEG/                   # 原始数据需下载
-│   │   └── process.py                          # 预处理脚本
+│   │   ├── Preprocessed_EEG/                   # Raw data needs to be downloaded
+│   │   └── process.py                          # Preprocessing script
 │   ├── THING-EEG
-│   │   ├── Data/                               # 原始数据需下载
+│   │   ├── Data/                               # Raw data needs to be downloaded
 │   │   ├── data_config.json
 │   │   ├── download.py
-│   │   └── process.py                          # 预处理脚本
+│   │   └── process.py                          # Preprocessing script
 │   ├── Total
-│   │   ├── CLIP_groundTruth/                   # 生成的CLIP特征
-│   │   ├── data_label.h5                       # 生成的HDF5文件
-│   │   └── dataset_weights.pth                 # 训练时自动生成
+│   │   ├── CLIP_groundTruth/                   # Generated CLIP features
+│   │   ├── data_label.h5                       # Generated HDF5 file
+│   │   └── dataset_weights.pth                 # Auto-generated during training
 │   ├── TUAB
-│   │   ├── edf/                                # 原始数据需下载
-│   │   ├── process_refine/                     # 临时缓存目录（处理后自动删除）
-│   │   └── process.py                          # 预处理脚本
+│   │   ├── edf/                                # Raw data needs to be downloaded
+│   │   ├── process_refine/                     # Temporary cache directory (auto-deleted after processing)
+│   │   └── process.py                          # Preprocessing script
 │   ├── TUEV
-│   │   ├── edf/                                # 原始数据需下载
-│   │   └── process.py                          # 预处理脚本
-│   └── create_dataset_pkl.py                   # CLIP groundtruth生成脚本
+│   │   ├── edf/                                # Raw data needs to be downloaded
+│   │   └── process.py                          # Preprocessing script
+│   └── create_dataset_pkl.py                   # CLIP groundtruth generation script
 ```
 
-## 数据处理流程
+## Data Processing Pipeline
 
-### 1. 环境准备
+### 1. Environment Setup
 
 ```bash
-# 首次运行必须设置环境变量
+# Must set environment variable on first run
 export WaveMind_ROOT_PATH_=/path/to/WaveMind
-# 或通过 Setup_Env.sh 自动设置
+# Or use Setup_Env.sh to auto-configure
 bash Setup_Env.sh /path/to/WaveMind
 ```
 
-### 2. 下载原始数据
+### 2. Download Raw Data
 
-参考各数据集的下载说明（见下方各数据集详细说明）
+Refer to the download instructions for each dataset (see detailed descriptions below).
 
-### 3. 运行预处理脚本
+### 3. Run Preprocessing Scripts
 
 ```bash
 cd $WaveMind_ROOT_PATH_/data
 
-# 处理各数据集 (按需运行)
+# Process each dataset as needed
 python ImageNetEEG/process.py
 python THING-EEG/process.py
 python SEED/process.py
@@ -58,42 +58,42 @@ python TUAB/process.py
 python TUEV/process.py
 ```
 
-### 4. 生成CLIP Groundtruth
+### 4. Generate CLIP Groundtruth
 
 ```bash
-# 所有数据集处理完成后，生成CLIP特征
+# After all datasets are processed, generate CLIP features
 python create_dataset_pkl.py
 ```
 
-## HDF5数据规范
+## HDF5 Data Specification
 
-### 1. 键命名规范
+### 1. Key Naming Convention
 
-| 数据集 | 训练集键 | 测试集键 | 跨被试集键 |
-|--------|---------|---------|-----------|
+| Dataset | Training Set Key | Test Set Key | Cross-Subject Key |
+|---------|-----------------|--------------|-------------------|
 | ImageNetEEG | `ImageNetEEG_train` | `ImageNetEEG_test` | `ImageNetEEG_cross` |
 | THING-EEG | `thingEEG_train` | `thingEEG_test` | `thingEEG_cross` |
 | SEED | `SEED_train` | `SEED_test` | `SEED_cross` |
 | TUAB | `TUAB_train` | `TUAB_test` | `TUAB_cross` |
 | TUEV | `TUEV_train` | `TUEV_test` | `TUEV_cross` |
 
-**注**: 不同数据集使用不同的命名风格（保持历史兼容性）。
+**Note**: Different datasets use different naming conventions (maintained for historical compatibility).
 
-### 2. 数据结构
+### 2. Data Structure
 
-每个样本为结构化数组，包含以下字段：
+Each sample is a structured array with the following fields:
 
 ```python
 dtype = [
-    ('eeg_data', np.float32, (32, 512)),    # EEG信号: 32通道 × 512采样点
-    ('text_feature', np.float16, (768,)),   # CLIP嵌入: 768维向量
-    ('caption', 'S192'),                    # 文本描述: 固定192字节
-    ('label', dtype, shape),                # 标签: 整数或浮点数
-    ('image_path', 'S192')                  # 图像路径: 固定192字节（可选）
+    ('eeg_data', np.float32, (32, 512)),    # EEG signal: 32 channels × 512 samples
+    ('text_feature', np.float16, (768,)),   # CLIP embedding: 768-dimensional vector
+    ('caption', 'S192'),                    # Text description: fixed 192 bytes
+    ('label', dtype, shape),                # Label: integer or float
+    ('image_path', 'S192')                  # Image path: fixed 192 bytes (optional)
 ]
 ```
 
-### 3. 验证数据完整性
+### 3. Validate Data Integrity
 
 ```python
 import h5py
@@ -102,14 +102,14 @@ import os
 hdf5_path = os.path.join(os.environ['WaveMind_ROOT_PATH_'], 'data/Total/data_label.h5')
 
 with h5py.File(hdf5_path, 'r') as f:
-    print("HDF5数据集键:")
+    print("HDF5 Dataset Keys:")
     for key in f.keys():
         print(f"  - {key}: {f[key].shape}")
 ```
 
-预期输出：
+Expected output:
 ```
-HDF5数据集键:
+HDF5 Dataset Keys:
   - ImageNetEEG_cross: (N,)
   - SEED_train: (N,)
   - SEED_test: (N,)
@@ -125,74 +125,74 @@ HDF5数据集键:
   - TUEV_cross: (N,)
 ```
 
-## CLIP Groundtruth文件
+## CLIP Groundtruth Files
 
-生成位置：`data/Total/CLIP_groundTruth/`
+Location: `data/Total/CLIP_groundTruth/`
 
-| 文件名 | 维度 | 说明 |
-|--------|------|------|
-| `ImageNetEEG.pkl` | - | 40个类别名称列表 |
-| `thingEEG_closeset.npy` | (1573, 768) | 闭集对象的平均图像特征 |
-| `thingEEG_closeset.pkl` | - | 1573个对象名称列表 |
-| `thingEEG.npy` | (200, 768) | 零样本对象的平均图像特征 |
-| `thingEEG.pkl` | - | 200个对象名称列表 |
-| `SEED.npy` | (3, 768) | 3个情绪类别的文本特征 |
+| File | Dimensions | Description |
+|------|------------|-------------|
+| `ImageNetEEG.pkl` | - | List of 40 class names |
+| `thingEEG_closeset.npy` | (1573, 768) | Mean image features for closed-set objects |
+| `thingEEG_closeset.pkl` | - | List of 1573 object names |
+| `thingEEG.npy` | (200, 768) | Mean image features for zero-shot objects |
+| `thingEEG.pkl` | - | List of 200 object names |
+| `SEED.npy` | (3, 768) | Text features for 3 emotion classes |
 | `SEED.pkl` | - | ['negative', 'neutral', 'positive'] |
-| `TUAB.npy` | (2, 768) | 2个类别的文本特征 |
+| `TUAB.npy` | (2, 768) | Text features for 2 classes |
 | `TUAB.pkl` | - | ['abnormal', 'normal'] |
-| `TUEV.npy` | (6, 768) | 6个事件类型的文本特征 |
+| `TUEV.npy` | (6, 768) | Text features for 6 event types |
 | `TUEV.pkl` | - | ['SPSW', 'GPED', 'PLED', 'EYEM', 'ARTF', 'BCKG'] |
 
-## 数据模态类型
+## Data Modality Types
 
-WaveMind支持两种数据模态：
+WaveMind supports two data modalities:
 
-### Brain Cognition (图像-EEG对)
-- **数据集**: ImageNetEEG, THING-EEG
-- **CLIP特征来源**: CLIP-ViT图像编码器
-- **特征类型**: 图像嵌入 (768维)
-- **保存方法**: `Convert_and_Save.save_to_hdf5_new()`
+### Brain Cognition (Image-EEG Pairs)
+- **Datasets**: ImageNetEEG, THING-EEG
+- **CLIP Feature Source**: CLIP-ViT image encoder
+- **Feature Type**: Image embedding (768-dim)
+- **Save Method**: `Convert_and_Save.save_to_hdf5_new()`
 
-### Brain State (文本-EEG对)
-- **数据集**: SEED, TUAB, TUEV
-- **CLIP特征来源**: CLIP-BERT文本编码器
-- **特征类型**: 文本嵌入 (768维)
-- **保存方法**: `Convert_and_Save.process_and_save()`
+### Brain State (Text-EEG Pairs)
+- **Datasets**: SEED, TUAB, TUEV
+- **CLIP Feature Source**: CLIP-BERT text encoder
+- **Feature Type**: Text embedding (768-dim)
+- **Save Method**: `Convert_and_Save.process_and_save()`
 
-## 数据集详细说明
+## Dataset Detailed Instructions
 
 ### THING-EEG
-#### EEG data
-1. 从 https://huggingface.co/datasets/LidongYang/EEG_Image_decode/tree/main/Preprocessed_data_250Hz 下载EEG数据
-2. 解压到 `WaveMind_ROOT_PATH_/data/THING-EEG/Data/Preprocessed_data_250Hz`
+#### EEG Data
+1. Download EEG data from https://huggingface.co/datasets/LidongYang/EEG_Image_decode/tree/main/Preprocessed_data_250Hz
+2. Extract to `WaveMind_ROOT_PATH_/data/THING-EEG/Data/Preprocessed_data_250Hz`
 
-#### 配对图像数据
-1. 从 https://osf.io/y63gw/files 下载 `training_images.zip` 和 `test_images.zip`
-2. 解压到 `WaveMind_ROOT_PATH_/data/THING-EEG/Data/images_set/training_images` 和 `test_images`
+#### Paired Image Data
+1. Download `training_images.zip` and `test_images.zip` from https://osf.io/y63gw/files
+2. Extract to `WaveMind_ROOT_PATH_/data/THING-EEG/Data/images_set/training_images` and `test_images`
 
 ### ImageNetEEG
-参考 https://github.com/perceivelab/eeg_visual_classification
+Refer to https://github.com/perceivelab/eeg_visual_classification
 
 ### SEED
-参考 http://bcmi.sjtu.edu.cn/~seed/
+Refer to http://bcmi.sjtu.edu.cn/~seed/
 
 ### TUAB
-从 https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml 下载
+Download from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
 
 ### TUEV
-从 https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml 下载
+Download from https://isip.piconepress.com/projects/tuh_eeg/html/downloads.shtml
 
-## 数据统计
+## Data Statistics
 
-我们提供了 `ShowHDF5Statistic.ipynb` 文件用于展示每个数据集的统计信息。
+We provide `ShowHDF5Statistic.ipynb` for displaying statistics of each dataset.
 
-## 处理脚本说明
+## Processing Script Notes
 
-所有 `process.py` 文件已优化为：
-- ✅ 无注释代码冗余
-- ✅ 统一的错误处理
-- ✅ 清晰的文档注释
-- ✅ 一致的HDF5保存逻辑
-- ✅ 自动内存管理和清理
+All `process.py` files have been optimized to:
+- ✅ No redundant comments in code
+- ✅ Unified error handling
+- ✅ Clear documentation comments
+- ✅ Consistent HDF5 save logic
+- ✅ Automatic memory management and cleanup
 
-详见各数据集目录下的 `process.py` 文件。
+See the `process.py` file in each dataset directory for details.
