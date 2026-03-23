@@ -1,5 +1,10 @@
+TARGET_CHANNELS = [
+    'Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8',
+    'FC5', 'FC1', 'FC2', 'FC6', 'T7', 'C3', 'Cz', 'C4', 'T8',
+    'CP5', 'CP1', 'CP2', 'CP6', 'P7', 'P3', 'Pz', 'P4', 'P8',
+    'POz', 'O1', 'Oz', 'O2', 'AFz', 'CPz', 'FCz'
+]
 import os
-import random
 import warnings
 
 import torch.nn.functional as F
@@ -10,7 +15,7 @@ import sys
 from PIL import Image
 from tqdm import tqdm
 from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
-from data.Utils import  Convert_and_Save
+from data.Utils import Convert_and_Save
 ds_name='ImageNetEEG'
 hdf5_path=f'{os.environ["WaveMind_ROOT_PATH_"]}/data/Total/data_label.h5'
 
@@ -46,41 +51,35 @@ class EEGDataset:
         self.image_fir=os.path.join(self.project_root,'data/ImageNetEEG/Image')
         self.class_dict=self.load_class_mapping(os.path.join(self.project_root,'data/ImageNetEEG/image_class.txt'))
 
-        
         channel_names = [
-            "Fp1", "Fp2", "F7", "F3", "Fz", "F4", "F8", "FC5", "FC1", "FC2", 
-            "FC6", "T7", "C3", "Cz", "C4", "T8", "TP9", "CP5", "CP1", "CP2", 
-            "CP6", "TP10", "P7", "P3", "Pz", "P4", "P8", "PO9", "O1", "Oz", 
-            "O2", "PO10", "AF7", "AF3", "AF4", "AF8", "F5", "F1", "F2", "F6", 
-            "FT9", "FT7", "FC3", "FC4", "FT8", "FT10", "C5", "C1", "C2", "C6", 
-            "TP7", "CP3", "CPz", "CP4", "TP8", "P5", "P1", "P2", "P6", "PO7", 
-            "PO3", "POz", "PO4", "PO8", "Fpz", "F9", "AFF5h", "AFF1h", "AFF2h", 
-            "AFF6h", "F10", "FTT9h", "FTT7h", "FCC5h", "FCC3h", "FCC1h", "FCC2h", 
-            "FCC4h", "FCC6h", "FTT8h", "FTT10h", "TPP9h", "TPP7h", "CPP5h", 
-            "CPP3h", "CPP1h", "CPP2h", "CPP4h", "CPP6h", "TPP8h", "TPP10h", 
-            "POO9h", "POO1", "POO2", "POO10h", "Iz", "AFp1", "AFp2", "FFT9h", 
-            "FFT7h", "FFC5h", "FFC3h", "FFC1h", "FFC2h", "FFC4h", "FFC6h", 
-            "FFT8h", "FFT10h", "TTP7h", "CCP5h", "CCP3h", "CCP1h", "CCP2h", 
-            "CCP4h", "CCP6h", "TTP8h", "P9", "PPO9h", "PPO5h", "PPO1h", "PPO2h", 
+            "Fp1", "Fp2", "F7", "F3", "Fz", "F4", "F8", "FC5", "FC1", "FC2",
+            "FC6", "T7", "C3", "Cz", "C4", "T8", "TP9", "CP5", "CP1", "CP2",
+            "CP6", "TP10", "P7", "P3", "Pz", "P4", "P8", "PO9", "O1", "Oz",
+            "O2", "PO10", "AF7", "AF3", "AF4", "AF8", "F5", "F1", "F2", "F6",
+            "FT9", "FT7", "FC3", "FC4", "FT8", "FT10", "C5", "C1", "C2", "C6",
+            "TP7", "CP3", "CPz", "CP4", "TP8", "P5", "P1", "P2", "P6", "PO7",
+            "PO3", "POz", "PO4", "PO8", "Fpz", "F9", "AFF5h", "AFF1h", "AFF2h",
+            "AFF6h", "F10", "FTT9h", "FTT7h", "FCC5h", "FCC3h", "FCC1h", "FCC2h",
+            "FCC4h", "FCC6h", "FTT8h", "FTT10h", "TPP9h", "TPP7h", "CPP5h",
+            "CPP3h", "CPP1h", "CPP2h", "CPP4h", "CPP6h", "TPP8h", "TPP10h",
+            "POO9h", "POO1", "POO2", "POO10h", "Iz", "AFp1", "AFp2", "FFT9h",
+            "FFT7h", "FFC5h", "FFC3h", "FFC1h", "FFC2h", "FFC4h", "FFC6h",
+            "FFT8h", "FFT10h", "TTP7h", "CCP5h", "CCP3h", "CCP1h", "CCP2h",
+            "CCP4h", "CCP6h", "TTP8h", "P9", "PPO9h", "PPO5h", "PPO1h", "PPO2h",
             "PPO6h", "PPO10h", "P10", "I1", "OI1h", "OI2h", "I2"
         ]
 
-        target_channels = [
-            'Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8',
-            'FC5', 'FC1', 'FC2', 'FC6', 'T7', 'C3', 'Cz', 'C4', 'T8',
-            'CP5', 'CP1', 'CP2', 'CP6', 'P7', 'P3', 'Pz', 'P4', 'P8',
-            'POz', 'O1', 'Oz', 'O2', 'AFz', 'CPz', 'FCz'
-        ]
+        # Build channel name to index mapping (case-insensitive)
+        channel_to_idx = {ch.lower(): idx for idx, ch in enumerate(channel_names)}
+        
         self.index_list = []
-        
-        for idx, target in enumerate(target_channels):
-            try:
-                pos = channel_names.index(target)
-                self.index_list.append(pos)
-            except ValueError:
-                random_idx = random.randint(0, 63)
-                self.index_list.append(random_idx)
-        
+        for target in TARGET_CHANNELS:
+            idx = channel_to_idx.get(target.lower())
+            if idx is None:
+                idx = self._find_nearest_channel(target, channel_to_idx)
+            self.index_list.append(idx)
+
+
         
         
         
@@ -89,6 +88,43 @@ class EEGDataset:
         
 
     # Get size
+
+    @staticmethod
+    def _find_nearest_channel(target, channel_to_idx):
+        """Find nearest channel using MNE standard montage distances."""
+        import mne
+        import numpy as np
+
+        target_pos = None
+        montage = mne.channels.make_standard_montage('standard_1020')
+        try:
+            target_pos = montage.get_positions()['ch_pos'][target]
+        except KeyError:
+            pass
+
+        if target_pos is None:
+            # Fallback: use Fpz
+            try:
+                target_pos = montage.get_positions()['ch_pos']['Fpz']
+            except KeyError:
+                return 0
+
+        min_dist, nearest = float('inf'), 0
+        for ch in TARGET_CHANNELS:
+            if ch == target:
+                continue
+            try:
+                pos = montage.get_positions()['ch_pos'][ch]
+                dist = np.linalg.norm(pos - target_pos)
+                if dist < min_dist:
+                    min_dist = dist
+                    idx = channel_to_idx.get(ch.lower())
+                    if idx is not None:
+                        nearest = idx
+            except KeyError:
+                continue
+        return nearest
+
     def __len__(self):
         return self.size
 
@@ -350,7 +386,7 @@ else:
     print("Warning: No cross data to save!")
 
 print("ImageNetEEG cross dataset processing complete!")
-print(f"Note: CLIP groundtruth files are generated via data/create_dataset_pkl.py")
+print(f"Note: CLIP groundtruth files are generated via data/preprocess_wavemind.py --rag-only")
 
 
 

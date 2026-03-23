@@ -970,7 +970,7 @@ class FilterTransform:
                 ch_types='eeg',
                 
             ))
-        if not raw.n_times/self.fs == 1 or raw.n_times/self.fs == 2 and not self.warn_length_already:
+        if not (raw.n_times / self.fs == 1 or raw.n_times / self.fs == 2) and not self.warn_length_already:
             warnings.warn(f"Data length is not 1s or 2s, but {raw.n_times/self.fs}s.")
             self.warn_length_already=True
         if hasattr(self, 'pre_hook'):
@@ -1033,8 +1033,40 @@ class FilterTransform:
         return raw
 
 
+def apply_10_20_mapping(raw):
+    """
+    Apply standard 10-20 electrode naming convention to raw EDF data.
+    Shared by TUAB and TUEV processors.
 
+    Args:
+        raw (mne.io.Raw): Raw EDF data
 
+    Returns:
+        mne.io.Raw: Data with standardized 10-20 channel names
+    """
+    electrode_mapping = {
+        'FP1': 'Fp1', 'FP2': 'Fp2',
+        'T3': 'T7', 'T4': 'T8',
+        'T5': 'P7', 'T6': 'P8',
+        'FZ': 'Fz', 'CZ': 'Cz', 'PZ': 'Pz'
+    }
+
+    eeg_chs = raw.copy().pick_types(eeg=True)
+    selected_chs, rename_dict = [], {}
+    for ch_name in eeg_chs.ch_names:
+        match = re.match(r'^EEG ([A-Z0-9]+)-REF$', ch_name, re.IGNORECASE)
+        if match:
+            electrode = match.group(1).upper()
+            if electrode in electrode_mapping or electrode in {
+                    'F3', 'F4', 'C3', 'C4', 'P3', 'P4', 'O1', 'O2', 'F7', 'F8'}:
+                selected_chs.append(ch_name)
+                new_name = electrode_mapping.get(electrode, electrode)
+                rename_dict[ch_name] = new_name
+
+    raw_filtered = raw.copy().pick_channels(selected_chs)
+    raw_filtered.rename_channels(rename_dict)
+    raw_filtered.set_montage('standard_1020', on_missing='ignore')
+    return raw_filtered
 
 
 def generate_caption_motor_imaging(action):

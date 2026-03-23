@@ -2,35 +2,7 @@ import os
 from torcheeg.datasets import SEEDDataset
 from torcheeg import transforms
 from torcheeg.model_selection import train_test_split_cross_subject, train_test_split
-from data.Utils import load_in_memory, Convert_and_Save, SEEDDatasetInfo, get_each_type_caption_feature
-
-
-def get_each_type_caption_feature(ds_info):
-    """
-    Generate CLIP text embeddings for all emotion labels in SEED dataset.
-
-    Args:
-        ds_info: SEEDDatasetInfo instance
-
-    Returns:
-        np.ndarray of shape (num_classes, 768) - CLIP text embeddings
-    """
-    from transformers import CLIPTextModelWithProjection, AutoTokenizer
-
-    text_model = CLIPTextModelWithProjection.from_pretrained('openai/clip-vit-large-patch14-336')
-    text_model.to('cuda')
-    text_tokenizer = AutoTokenizer.from_pretrained('openai/clip-vit-large-patch14-336')
-    text_features = []
-    for type in range(ds_info.id_min,ds_info.id_max+1):
-        print(type,ds_info.get_caption(type))
-        text_inputs = text_tokenizer(ds_info.get_caption(type), padding=True, return_tensors="pt").to('cuda')
-        text_feature = text_model(**text_inputs).text_embeds
-        text_features.append(text_feature.detach().cpu().numpy())
-        assert text_feature.shape[-1]==768
-
-    del text_model,text_tokenizer
-    return np.concatenate(text_features,axis=0)
-
+from data.Utils import load_in_memory, Convert_and_Save, SEEDDatasetInfo
 
 if __name__ =="__main__":
     """

@@ -53,58 +53,13 @@ We open-sourced our models, data, and code here.
 
 - **Configuration Environment**
 
+
 ```bash
-conda activate <your-local_virtual_env>
-bash Setup_Env.sh <your_project_absolute_path>
+pip install uv
+uv sync
+source .venv/bin/activate
+export WaveMind_ROOT_PATH_=/xxxx/xxxx/WaveMind
 ```
-Example:
-```bash
-conda activate WaveMind
-bash Setup_Env.sh /xxxx/xxxx/WaveMind
-```
-This bash script will auto-install the required packages and dependencies for the project. And write 'WaveMind_ROOT_PATH_' in ~/.bashrc which can MUST be used in the project.
-
-- **Demostration**
-
-1. We encourage the use of our pre-processing pipeline below, but you can also try using your own EEG data.
-2. Below is the example code. We also provide [Predict Script](/WaveMind/EEGLLM/Predict.py) for inference.
-
-```python
-import os
-from EEGLLM.Predict import WaveMind_inference, select_data_for_test,get_model_base_from_path,get_model_name_from_path
-from llava.model.builder import load_pretrained_model
-
-
-
-model_path = "your local model path"
-question='Hi doctor, please help me to see any event inside my EEG.'
-
-model_base=get_model_base_from_path(model_path)
-tokenizer, model, modility_processor, context_len = load_pretrained_model(
-    model_path=model_path,
-    model_base=model_base,
-    model_name=get_model_name_from_path(model_path),
-)
-# Here we use the preprocessed data after pipeline, you may change to any EEG clip as long as it is 32 channel, 512 data-point.
-
-# Option 1: Use preprocessed data (Recommand)
-# Dataset can be one of TUEV, TUAB, ImageNet-EEG,THING-EEG, SEED
-ds=select_data_for_test(dataset='TUEV')
-sample=ds[0]
-category,eeg_tensor=sample['text'].decode(),sample['eeg_data']
-
-# Option 2: Use your own data
-# We did not test on other datasets, therefore use with caution
-# better finetune in your dataset, use our provided train script for your reference
-
-raw=mne.io.read_raw('xxx.edf', preload=True)
-electrode_list=raw.ch_names
-eeg_tensor=modility_processor.preprocess(raw.get_data(),fs=raw.info['sfreq'],l_freq=None,h_freq=None,electrode_list=electrode_list,verbose=True,confirm_cut_1s='random')
-
-# Perform Inference
-WaveMind_inference(model=model,tokenizer=tokenizer,question=question,processed_eeg=eeg_tensor,RAG=True,verbose=True,model_base=model_base)
-```
-
 
 ## 📚 Data Engineering
 
@@ -126,26 +81,28 @@ For some datasets that are difficult to download, we provide convenient download
 
 Please refer to [here](data/README.md) for details.
 
-### Automated Preprocessing Script
+### Unified Preprocessing Script
 
-We provide an automated bash script to process all EEG datasets sequentially:
+We provide a unified Python script to process all EEG datasets:
 
 ```bash
-# Make the script executable
-chmod +x data/preprocess_wavemind_dataset.sh
+# Process all datasets + generate RAG ground truth
+python data/preprocess_wavemind.py --all --seed 42
 
-# Process all datasets
-./data/preprocess_wavemind_dataset.sh
+# Process a specific dataset
+python data/preprocess_wavemind.py --dataset SEED --seed 42
+python data/preprocess_wavemind.py --dataset TUAB --seed 42
+python data/preprocess_wavemind.py --dataset TUEV --seed 42
+python data/preprocess_wavemind.py --dataset ImageNetEEG --seed 42
+python data/preprocess_wavemind.py --dataset THING-EEG --seed 42
 
-# Process specific dataset only
-./data/preprocess_wavemind_dataset.sh SEED
+# Generate RAG ground truth NPY files only
+python data/preprocess_wavemind.py --rag-only
 
-# Show available datasets
-./data/preprocess_wavemind_dataset.sh --list
-
-# Skip dependency checks
-./data/preprocess_wavemind_dataset.sh --skip-check
+# Available datasets: SEED, TUAB, TUEV, ImageNetEEG, THING-EEG, all
 ```
+
+Each dataset can also be processed independently via its own `process.py` (e.g., `data/SEED/process.py`).
 
 
 
@@ -263,18 +220,19 @@ Please refer to script for more setting details.
 │   ├── ImageNetEEG
 │   │   ├── eeg_signals_raw_with_mean_std.pth  -> raw_file need to be download
 │   │   ├── Image -> raw_file need to be download
-│   │   └── ....
-│   ├── preUtils.py
+│   │   └── process.py           -> independent dataset processor
+│   └── ....
+│   ├── preprocess_wavemind.py   -> unified preprocessing entry point
 │   ├── SEED
 │   │   ├── Preprocessed_EEG  -> raw_file need to be download
-│   │   └── ....
+│   │   └── process.py           -> independent dataset processor
 │   ├── THING-EEG
 │   │   ├── Data   -> raw_file need to be download
 │   │   ├── data_config.json
 │   │   ├── download.py
-│   │   └── ....
+│   │   └── process.py           -> independent dataset processor
 │   ├── Total
-│   │   ├── CLIP_groundTruth   -> generated_file
+│   │   ├── CLIP_groundTruth   -> generated_file (RAG features)
 │   │   ├── data_label.h5      -> generated_file
 │   │   ├── dataset_weights.pth  -> auto_generated_file when training
 │   │   └── ....
@@ -282,19 +240,20 @@ Please refer to script for more setting details.
 │   │   ├── download.exp  -> raw_file need to be download
 │   │   ├── edf   -> raw_file need to be download
 │   │   ├── save  -> cache dir
-│   │   └── ....
+│   │   └── process.py           -> independent dataset processor
 │   ├── TUEV
-│   │   ├── download.exp  
+│   │   ├── download.exp
 │   │   ├── edf    -> raw_file need to be download
 │   │   ├── eegs.npz  -> cache file
-│   │   └── ....
-│   └── ....
+│   │   └── process.py           -> independent dataset processor
+│   ├── Utils.py                 -> shared utilities (filter, mapping, HDF5)
+│   └── README.md               -> data preprocessing details
 ├── EEG_Encoder
 │   ├── Resource
 │   │   ├── Checkpoint   -> EEG Encoder checkpoint
-│   │   └── ....
+│   │   └── ....
 │   ├── run_CLIPtraining.py -> Script to Train EEG Encoder
-│   └── ....
+│  └── ....
 ├── EEGLLM
 │   ├── Evaluation   -> Evaluation on WaveMind_Bench
 │   └── ....
@@ -302,10 +261,9 @@ Please refer to script for more setting details.
 │   ├── data
 │   │   ├── EEG_data    ->  WaveMind_Bench EEG data location
 │   │   ├── Test_data   ->  WaveMind_Bench MCQ data location
-│   │   └── ...
-│   ├── Script
-│   │   └── Test_data   -> Scriptd to WaveMind_Bench data generation
-│   └── ....
+│   │  └── ...
+│  ├── Script
+│  └── Test_data   -> Scriptd to WaveMind_Bench data generation
 └── ....
 ```
 

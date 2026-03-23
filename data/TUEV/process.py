@@ -48,33 +48,6 @@ TUEV dataset optimized streaming processing
 - Better memory management with garbage collection
 """
 
-def apply_10_20_mapping(raw):
-    """Apply 10-20 electrode mapping to raw EEG data"""
-    electrode_mapping = {
-        'FP1': 'Fp1', 'FP2': 'Fp2', 
-        'T3': 'T7', 'T4': 'T8', 
-        'T5': 'P7', 'T6': 'P8', 
-        'FZ': 'Fz', 'CZ': 'Cz', 'PZ': 'Pz' 
-    }
-
-    eeg_chs = raw.copy().pick_types(eeg=True)
-    selected_chs, rename_dict = [], {}
-    for ch_name in eeg_chs.ch_names:
-        match = re.match(r'^EEG ([A-Z0-9]+)-REF$', ch_name, re.IGNORECASE)
-        if match:
-            electrode = match.group(1).upper()
-            if electrode in electrode_mapping or electrode in {'F3', 'F4', 'C3', 'C4', 'P3', 'P4', 'O1', 'O2', 'F7',
-                                                               'F8'}:
-                selected_chs.append(ch_name)
-                new_name = electrode_mapping.get(electrode, electrode)
-                rename_dict[ch_name] = new_name
-
-    raw_filtered = raw.copy().pick_channels(selected_chs)
-    raw_filtered.rename_channels(rename_dict)
-    raw_filtered.set_montage('standard_1020', on_missing='ignore')
-    return raw_filtered
-
-
 def BuildEvents(signals, times, EventData):
     """Build events from EEG signals and event data"""
     [numEvents, z] = EventData.shape
