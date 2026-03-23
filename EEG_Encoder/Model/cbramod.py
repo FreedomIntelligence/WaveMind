@@ -2,14 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import copy
-from typing import Optional, Any, Union, Callable
+from typing import Optional, Union, Callable
 import torch
 import torch.nn as nn
-import warnings
 from torch import Tensor
 from torch.nn import functional as F
-import pdb
-import os
+from data.Utils import get_wavemind_root
 
 
 class TransformerEncoder(nn.Module):
@@ -327,7 +325,7 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = CBraMod(in_dim=200, out_dim=200, d_model=200, dim_feedforward=800, seq_len=30, n_layer=12,
                     nhead=8).to(device)
-    model.load_state_dict(torch.load(f'{os.environ["WaveMind_ROOT_PATH_"]}/EEG_Encoder/Resource/Checkpoint/ALL/CbraMod.pth',map_location=device),strict=True)
+    model.load_state_dict(torch.load(f'{get_wavemind_root()}/EEG_Encoder/Resource/Checkpoint/ALL/CbraMod.pth',map_location=device),strict=True)
     a = torch.randn((16,32,200)).to(device)
     b = model(a)["pooler_output"]
     print(a.shape, b.shape)

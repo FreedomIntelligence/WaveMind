@@ -3,14 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from .CSBrain_transformerlayer import *
 from .CSBrain_transformer import *
-from collections import Counter
 from collections import defaultdict
 
-import numpy as np
-import matplotlib.pyplot as plt
-import os
-import time
-import uuid
 
 class CSBrain(nn.Module):
     def __init__(self, in_dim=20, out_dim=200, d_model=200, dim_feedforward=800, seq_len=10, n_layer=6,

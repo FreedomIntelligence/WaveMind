@@ -26,10 +26,7 @@ Splits:
 import mne
 import numpy as np
 import os
-import pickle
 from tqdm import tqdm
-import re
-import glob
 import random
 import gc
 from data.Utils import *
@@ -146,7 +143,7 @@ class StreamingProcessor:
                 eegdata=eeg_array,
                 label=label_array,
                 dataset_name=f'{self.ds_name}_train',
-                path=os.path.join(os.environ['WaveMind_ROOT_PATH_'], self.hdf5_path)
+                path=os.path.join(get_wavemind_root(), self.hdf5_path)
             )
             self.train_count += len(eeg_array)
         elif dataset_type == 'test':
@@ -155,7 +152,7 @@ class StreamingProcessor:
                 eegdata=eeg_array,
                 label=label_array,
                 dataset_name=f'{self.ds_name}_test',
-                path=os.path.join(os.environ['WaveMind_ROOT_PATH_'], self.hdf5_path)
+                path=os.path.join(get_wavemind_root(), self.hdf5_path)
             )
             self.test_count += len(eeg_array)
         elif dataset_type == 'cross':
@@ -164,7 +161,7 @@ class StreamingProcessor:
                 eegdata=eeg_array,
                 label=label_array,
                 dataset_name=f'{self.ds_name}_cross',
-                path=os.path.join(os.environ['WaveMind_ROOT_PATH_'], self.hdf5_path)
+                path=os.path.join(get_wavemind_root(), self.hdf5_path)
             )
             self.cross_count += len(eeg_array)
     

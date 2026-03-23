@@ -1,28 +1,17 @@
 import os
-import sys
-from time import sleep
 import os
 import random
 import numpy as np
-import pandas as pd  
-root_dir = f'{os.environ["WaveMind_ROOT_PATH_"]}/Data_Engineering'
+import pandas as pd
+from data.Utils import get_wavemind_root
+root_dir = f'{get_wavemind_root()}/Data_Engineering'
 
 from EEG_Encoder.Tools.dataBuilder import CLIPDataset
 
 
-from accelerate.commands.config.config_args import cache_dir
-import copy
-import re
-import secrets
-import string
 import numpy as np
-import json
-import torch
 import os
-from datetime import datetime
-from PIL import Image
 from tqdm import tqdm
-import mne
 from Data_Engineering.utils import EidGenerator
 
 
@@ -99,13 +88,13 @@ if __name__ == '__main__':
         print(f"Generating {output_mode} dataset using {dataset_mode} mode...")
         
         # Create unique eid generator for each mode
-        eid_generator=EidGenerator(f"test_{ds_name}_{output_mode}",cache_dir=f'{os.environ["WaveMind_ROOT_PATH_"]}/Data_Engineering/data/WaveMind_Bench/Record_data')
+        eid_generator=EidGenerator(f"test_{ds_name}_{output_mode}",cache_dir=f'{get_wavemind_root()}/Data_Engineering/data/WaveMind_Bench/Record_data')
         
         # Load dataset with specified mode
         ds_dataset = CLIPDataset(
-            f'{os.environ["WaveMind_ROOT_PATH_"]}/data/Total/data_label.h5',
+            f'{get_wavemind_root()}/data/Total/data_label.h5',
             mode=dataset_mode,
-            ground_truth_dir=f'{os.environ["WaveMind_ROOT_PATH_"]}/data/Total/CLIP_groundTruth',
+            ground_truth_dir=f'{get_wavemind_root()}/data/Total/CLIP_groundTruth',
             dataset_name=ds_name,
             float_type='float32',
             exclude_dataset=None,

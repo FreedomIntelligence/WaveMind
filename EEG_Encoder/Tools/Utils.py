@@ -1,5 +1,4 @@
 import torch
-import torchaudio
 import torch.distributed as dist
 import torch
 from scipy.signal import iirnotch, filtfilt

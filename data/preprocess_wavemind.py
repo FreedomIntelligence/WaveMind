@@ -19,14 +19,10 @@ import os
 import sys
 import re
 import glob
-import shutil
 import hashlib
 import argparse
-import warnings
 from abc import ABC, abstractmethod
-from functools import lru_cache
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -40,7 +36,7 @@ import gc
 
 # ====== PATH SETUP ======
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.environ.get('WaveMind_ROOT_PATH_', os.path.dirname(SCRIPT_DIR))
+ROOT_DIR = get_wavemind_root()
 HDF5_PATH = os.path.join(ROOT_DIR, 'data/Total/data_label.h5')
 CLIP_CACHE_DIR = os.path.join(ROOT_DIR, 'data/Total/.clip_cache')
 RAG_DIR = os.path.join(ROOT_DIR, 'data/Total/CLIP_groundTruth')
@@ -52,10 +48,9 @@ for d in [CLIP_CACHE_DIR, RAG_DIR]:
 sys.path.insert(0, SCRIPT_DIR)
 from data.Utils import (
     SEEDDatasetInfo, TUABDatasetInfo, TUEVDatasetInfo,
-    ImageNetEEGDatasetInfo, FilterTransform, Convert_and_Save,
-    load_in_memory, get_each_type_caption_feature,
+    ImageNetEEGDatasetInfo, FilterTransform, load_in_memory, get_each_type_caption_feature,
 )
-from data.preUtils import z_score_normalize, eeg_filter_all
+from data.preUtils import eeg_filter_all
 
 # ====== CONSTANTS ======
 TARGET_CHANNELS = [
@@ -203,7 +198,6 @@ class HDF5Writer:
     def save(self, ds_name: str, eeg_data: np.ndarray, text_features: np.ndarray,
              captions: List[str], labels: np.ndarray, image_paths: Optional[List[str]] = None):
         """Save a batch to HDF5 with structured array format."""
-        import fcntl
         caption_length = 192
         path_length = 192
         num_samples = eeg_data.shape[0]

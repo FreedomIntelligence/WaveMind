@@ -53,13 +53,13 @@ We open-sourced our models, data, and code here.
 
 - **Configuration Environment**
 
-
 ```bash
 pip install uv
 uv sync
 source .venv/bin/activate
-export WaveMind_ROOT_PATH_=/xxxx/xxxx/WaveMind
 ```
+
+Note: Project root path is automatically detected. If needed, set `export WaveMind_ROOT_PATH_=/path/to/WaveMind` for backward compatibility.
 
 ## 📚 Data Engineering
 
@@ -215,7 +215,7 @@ Please refer to script for more setting details.
 
 ## 📂 File Tree
 ```bash
-/WaveMind_ROOT_PATH_
+/path/to/WaveMind
 ├── data
 │   ├── ImageNetEEG
 │   │   ├── eeg_signals_raw_with_mean_std.pth  -> raw_file need to be download
@@ -261,9 +261,9 @@ Please refer to script for more setting details.
 │   ├── data
 │   │   ├── EEG_data    ->  WaveMind_Bench EEG data location
 │   │   ├── Test_data   ->  WaveMind_Bench MCQ data location
-│   │  └── ...
-│  ├── Script
-│  └── Test_data   -> Scriptd to WaveMind_Bench data generation
+│   │   └── ...
+│   ├── Script
+│   └── Test_data   -> Scriptd to WaveMind_Bench data generation
 └── ....
 ```
 

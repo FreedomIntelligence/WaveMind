@@ -92,9 +92,7 @@ training:
 # FILE PATHS AND DIRECTORIES
 # ============================================================================
 paths:
-  # Root path from environment variable (required)
-  # - Set via: export WaveMind_ROOT_PATH_=/path/to/WaveMind
-  # - Fallback to current directory if not set
+  # Root path (auto-detected from working directory, or via WaveMind_ROOT_PATH_ env var for backward compatibility)
   ROOT_PATH: ${oc.env:WaveMind_ROOT_PATH_,.}
 
   # Data directory (auto-configured from ROOT_PATH)

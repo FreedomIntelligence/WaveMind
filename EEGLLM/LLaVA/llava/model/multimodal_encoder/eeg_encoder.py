@@ -16,7 +16,7 @@ import mne
 from EEG_Encoder.Model.baseModel import ATMS,EEGConformer_Encoder,NICE, model_selection
 from EEG_Encoder.Model.CommonBlock import Config
 from torcheeg import transforms
-from data.Utils import FilterTransform
+from data.Utils import FilterTransform, get_wavemind_root
 import random
 
 class NeuroTower(nn.Module):
@@ -41,9 +41,8 @@ class NeuroTower(nn.Module):
             warnings.warn("neuro_tower_name is None in config, set default value ATMSmodify")
             neuro_tower_name='ATMSmodify'
             
-        if os.environ['WaveMind_ROOT_PATH_'] is None or os.environ['WaveMind_ROOT_PATH_'] == "":
-            raise ValueError("Please set the WaveMind_ROOT_PATH_ environment variable to the root path of the WaveMind project.")
-        load_dir=os.path.join(os.environ['WaveMind_ROOT_PATH_'],'EEG_Encoder/Resource/Checkpoint/ALL')
+        root = get_wavemind_root()
+        load_dir=os.path.join(root,'EEG_Encoder/Resource/Checkpoint/ALL')
 
         # Capture the returned sampling rate from model_selection
         self.eeg_tower, self.model_fs = model_selection(neuro_tower_name,load_dir=load_dir if load_checkpoint else None)
@@ -75,7 +74,7 @@ class NeuroTower(nn.Module):
         self.fs = self.model_fs
         self.eegProcessor = EEGProcessor(fs=self.fs)
 
-        self.check_model_pass_test(self.eeg_tower,npz_data=os.path.join(os.environ['WaveMind_ROOT_PATH_']+"/data/Total/test_FeatureExtractor.npz"))
+        self.check_model_pass_test(self.eeg_tower,npz_data=os.path.join(get_wavemind_root()+"/data/Total/test_FeatureExtractor.npz"))
         
 
 

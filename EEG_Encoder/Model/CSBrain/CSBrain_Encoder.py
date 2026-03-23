@@ -1,10 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from collections import defaultdict
-import numpy as np
 
-from .CSBrain import CSBrain, generate_area_config
+from .CSBrain import CSBrain
 from EEG_Encoder.Model.CommonBlock import Config
 
 

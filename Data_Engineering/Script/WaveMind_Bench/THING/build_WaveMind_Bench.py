@@ -1,27 +1,16 @@
 import os
-import sys
-from time import sleep
 import os
 import random
 import numpy as np
-import pandas as pd 
-root_dir = f'{os.environ["WaveMind_ROOT_PATH_"]}/Data_Engineering'
+import pandas as pd
+from data.Utils import get_wavemind_root
+root_dir = f'{get_wavemind_root()}/Data_Engineering'
 
 from EEG_Encoder.Tools.dataBuilder import CLIPDataset_ThingEEG
-from EEG_Encoder.Tools.dataBuilder import CLIPDataset
 
-import copy
-import re
-import secrets
-import string
 import numpy as np
-import json
-import torch
 import os
-from datetime import datetime
-from PIL import Image
 from tqdm import tqdm
-import mne
 from Data_Engineering.utils import EidGenerator
 
 
@@ -105,7 +94,7 @@ if __name__ == '__main__':
 
 
 
-    eid_generator=EidGenerator(f"test_{ds_name}_{mode}_{method}_{cs_zs}",cache_dir=f'{os.environ["WaveMind_ROOT_PATH_"]}/Data_Engineering/data/WaveMind_Bench/Record_data')
+    eid_generator=EidGenerator(f"test_{ds_name}_{mode}_{method}_{cs_zs}",cache_dir=f'{get_wavemind_root()}/Data_Engineering/data/WaveMind_Bench/Record_data')
 
     if method=="SD":
         subjects= ['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-06', 'sub-07', 'sub-08','sub-09']

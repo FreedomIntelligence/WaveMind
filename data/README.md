@@ -2,7 +2,7 @@
 
 ## 📂 File Tree Structure
 ```bash
-/WaveMind_ROOT_PATH_
+/path/to/WaveMind
 ├── data
 │   ├── ImageNetEEG
 │   │   ├── eeg_signals_raw_with_mean_std.pth  # Raw data needs to be downloaded
@@ -35,10 +35,8 @@
 ### 1. Environment Setup
 
 ```bash
-# Must set environment variable on first run
-export WaveMind_ROOT_PATH_=/path/to/WaveMind
-# Or use Setup_Env.sh to auto-configure
-bash Setup_Env.sh /path/to/WaveMind
+# Project root is auto-detected. For backward compatibility, you can set:
+# export WaveMind_ROOT_PATH_=/path/to/WaveMind
 ```
 
 ### 2. Download Raw Data
@@ -48,7 +46,7 @@ Refer to the download instructions for each dataset (see detailed descriptions b
 ### 3. Run Preprocessing Scripts
 
 ```bash
-cd $WaveMind_ROOT_PATH_/data
+cd /path/to/WaveMind/data
 
 # Process each dataset as needed
 python ImageNetEEG/process.py
@@ -98,8 +96,10 @@ dtype = [
 ```python
 import h5py
 import os
+from data.Utils import get_wavemind_root
 
-hdf5_path = os.path.join(os.environ['WaveMind_ROOT_PATH_'], 'data/Total/data_label.h5')
+# Auto-detected path (or use WaveMind_ROOT_PATH_ env var for backward compatibility)
+hdf5_path = os.path.join(get_wavemind_root(), 'data/Total/data_label.h5')
 
 with h5py.File(hdf5_path, 'r') as f:
     print("HDF5 Dataset Keys:")
@@ -164,11 +164,11 @@ WaveMind supports two data modalities:
 ### THING-EEG
 #### EEG Data
 1. Download EEG data from https://huggingface.co/datasets/LidongYang/EEG_Image_decode/tree/main/Preprocessed_data_250Hz
-2. Extract to `WaveMind_ROOT_PATH_/data/THING-EEG/Data/Preprocessed_data_250Hz`
+2. Extract to `/path/to/WaveMind/data/THING-EEG/Data/Preprocessed_data_250Hz`
 
 #### Paired Image Data
 1. Download `training_images.zip` and `test_images.zip` from https://osf.io/y63gw/files
-2. Extract to `WaveMind_ROOT_PATH_/data/THING-EEG/Data/images_set/training_images` and `test_images`
+2. Extract to `/path/to/WaveMind/data/THING-EEG/Data/images_set/training_images` and `test_images`
 
 ### ImageNetEEG
 Refer to https://github.com/perceivelab/eeg_visual_classification

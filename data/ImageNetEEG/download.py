@@ -1,7 +1,6 @@
 from time import sleep
 
 import torch
-import numpy
 import os
 
 from kaggle.rest import ApiException
@@ -71,7 +70,6 @@ class Splitter:
 
 if __name__ == "__main__":
     ds = EEGDataset()
-    from tenacity import retry, stop_after_attempt, wait_exponential, wait_fixed, retry_if_exception_type
     from tqdm import tqdm
     from kaggle.api.kaggle_api_extended import KaggleApi
     import os

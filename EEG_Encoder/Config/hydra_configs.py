@@ -9,14 +9,14 @@ import os
 from dataclasses import dataclass, field
 from typing import List, Optional
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING
+
+from data.Utils import get_wavemind_root
 
 # Import existing configs as base
 from .training_config import (
     EEGConfig as BaseEEGConfig,
     TrainingConfig as BaseTrainingConfig,
     MetricsConfig as BaseMetricsConfig,
-    PathConfig as BasePathConfig,
     DataAugmentationConfig as BaseDataAugmentationConfig,
     HDF5Config as BaseHDF5Config,
 )
@@ -44,8 +44,8 @@ class MetricsConfig(BaseMetricsConfig):
 @dataclass
 class PathConfig:
     """File paths (Hydra-enabled with proper type annotations)"""
-    # Root path from environment variable
-    ROOT_PATH: str = field(default_factory=lambda: os.environ.get('WaveMind_ROOT_PATH_', '.'))
+    # Root path (auto-detected, or via WaveMind_ROOT_PATH_ env var for backward compatibility)
+    ROOT_PATH: str = field(default_factory=lambda: get_wavemind_root())
 
     # Data directories (computed from ROOT_PATH)
     DATA_DIR: Optional[str] = None

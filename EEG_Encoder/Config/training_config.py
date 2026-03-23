@@ -6,8 +6,10 @@ scattered throughout the codebase.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
+
+from data.Utils import get_wavemind_root
 
 
 @dataclass
@@ -86,8 +88,8 @@ class MetricsConfig:
 class PathConfig:
     """Default paths (can be overridden by environment variables or CLI args)"""
 
-    # Root path from environment variable
-    ROOT_PATH: str = os.environ.get('WaveMind_ROOT_PATH_', '.')
+    # Root path (auto-detected via get_wavemind_root(), or via WaveMind_ROOT_PATH_ env var for backward compatibility)
+    ROOT_PATH: str = field(default_factory=lambda: get_wavemind_root())
 
     # Data directories
     DATA_DIR: str = None

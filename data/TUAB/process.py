@@ -7,7 +7,7 @@ from torcheeg import transforms
 import numpy as np
 from tqdm import tqdm
 
-from data.Utils import TUABDatasetInfo, FilterTransform, Convert_and_Save, apply_10_20_mapping
+from data.Utils import TUABDatasetInfo, FilterTransform, Convert_and_Save, get_wavemind_root
 
 hdf5_path = "data/Total/data_label.h5"
 
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     """
 
     # Stage 2: Load pre-split data and convert to HDF5
-    root = f"{os.environ['WaveMind_ROOT_PATH_']}/data/TUAB/process_refine"
+    root = f"{get_wavemind_root()}/data/TUAB/process_refine"
     train_dump_folder = os.path.join(root, "train")
     val_dump_folder = os.path.join(root, "val")
     test_dump_folder = os.path.join(root, "test")
@@ -76,7 +76,7 @@ if __name__ == "__main__":
                         eegdata=eeg_data,
                         label=label_data,
                         dataset_name=f'TUAB_{dataset_type}',
-                        path=os.path.join(os.environ['WaveMind_ROOT_PATH_'], hdf5_path)
+                        path=os.path.join(get_wavemind_root(), hdf5_path)
                     )
                     
                     # Clear batch
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     process_in_batches(test_files, cross_sub, 'cross')
 
     # Clean up temporary directory
-    process_refine_dir = os.path.join(os.environ['WaveMind_ROOT_PATH_'], 'data/TUAB/process_refine')
+    process_refine_dir = os.path.join(get_wavemind_root(), 'data/TUAB/process_refine')
     if os.path.exists(process_refine_dir):
         print(f"Cleaning up temporary directory: {process_refine_dir}")
         shutil.rmtree(process_refine_dir)

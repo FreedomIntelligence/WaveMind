@@ -5,10 +5,7 @@ WaveMind's EEG encoder training module for aligning EEG signals with CLIP semant
 ## Quick Start
 
 ```bash
-# Ensure environment is set up
-export WaveMind_ROOT_PATH_=/path/to/WaveMind
-
-# Basic CLIP training
+# Basic CLIP training (project root is auto-detected)
 python EEG_Encoder/run_CLIPtraining.py --config-name=train_atms
 ```
 

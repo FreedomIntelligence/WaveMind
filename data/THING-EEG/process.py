@@ -17,16 +17,14 @@ HDF5 Keys Generated:
 - thingEEG_cross
 """
 
-import glob
 import numpy as np
-import os
 from data.Utils import *
 from EEG_Encoder.Tools.dataBuilder import CLIPDataset_ThingEEG
 import gc
 
 
 ds_name = 'THING-EEG'
-hdf5_path=f'{os.environ["WaveMind_ROOT_PATH_"]}/data/Total/data_label.h5'
+hdf5_path=f'{get_wavemind_root()}/data/Total/data_label.h5'
 
 def get_the_data(dataset):
     """

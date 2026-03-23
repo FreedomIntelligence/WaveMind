@@ -1,8 +1,6 @@
 import torch
-import sys
 from einops.layers.torch import Rearrange
 from torch import nn, Tensor
-import sys
 from .Transformer_EncDec import Encoder, EncoderLayer
 from .SelfAttention_Family import FullAttention, AttentionLayer
 from .Embed import DataEmbedding

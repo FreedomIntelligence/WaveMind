@@ -5,19 +5,16 @@ TARGET_CHANNELS = [
     'POz', 'O1', 'Oz', 'O2', 'AFz', 'CPz', 'FCz'
 ]
 import os
-import warnings
 
 import torch.nn.functional as F
 import numpy as np
-import h5py
 import torch
-import sys
 from PIL import Image
 from tqdm import tqdm
 from transformers import CLIPImageProcessor, CLIPVisionModelWithProjection
-from data.Utils import Convert_and_Save
+from data.Utils import Convert_and_Save, get_wavemind_root
 ds_name='ImageNetEEG'
-hdf5_path=f'{os.environ["WaveMind_ROOT_PATH_"]}/data/Total/data_label.h5'
+hdf5_path=f'{get_wavemind_root()}/data/Total/data_label.h5'
 
 img_processor = CLIPImageProcessor.from_pretrained('openai/clip-vit-large-patch14-336')
 img_model = CLIPVisionModelWithProjection.from_pretrained('openai/clip-vit-large-patch14-336')
@@ -27,7 +24,7 @@ img_model = CLIPVisionModelWithProjection.from_pretrained('openai/clip-vit-large
 class EEGDataset:
 
     # Constructor
-    def __init__(self, eeg_signals_path=os.path.join(os.environ['WaveMind_ROOT_PATH_'],'data/ImageNetEEG/eeg_signals_raw_with_mean_std.pth'), subjects=None):
+    def __init__(self, eeg_signals_path=os.path.join(get_wavemind_root(),'data/ImageNetEEG/eeg_signals_raw_with_mean_std.pth'), subjects=None):
         # "subjects" can be [0,1,2,3,4,5,6,7,8,9] representing the subject number
         # Load EEG signals
         loaded = torch.load(eeg_signals_path,weights_only=False)
@@ -45,7 +42,7 @@ class EEGDataset:
                 print("NaN count:", torch.isnan(eeg).sum())
                 print("Inf count:", torch.isinf(eeg).sum())
 
-        self.project_root = os.environ.get('WaveMind_ROOT_PATH_')
+        self.project_root = get_wavemind_root()
         # Compute size
         self.size = len(self.data)
         self.image_fir=os.path.join(self.project_root,'data/ImageNetEEG/Image')
@@ -318,7 +315,7 @@ def process(sp):
         img_path=sp[i]['image_path']
         captions = 'This is a '+sp[i]['label_name']
         if img_path not in cache_dict:
-            real_img_path=os.path.join(os.environ['WaveMind_ROOT_PATH_'],img_path)
+            real_img_path=os.path.join(get_wavemind_root(),img_path)
             image = Image.open(real_img_path)
             inputs = img_processor(images=image, return_tensors="pt").to('cuda')
             with torch.no_grad():

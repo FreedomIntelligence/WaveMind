@@ -2,7 +2,7 @@ import os
 from torcheeg.datasets import SEEDDataset
 from torcheeg import transforms
 from torcheeg.model_selection import train_test_split_cross_subject, train_test_split
-from data.Utils import load_in_memory, Convert_and_Save, SEEDDatasetInfo
+from data.Utils import load_in_memory, Convert_and_Save, SEEDDatasetInfo, get_wavemind_root
 
 if __name__ =="__main__":
     """
@@ -43,14 +43,14 @@ if __name__ =="__main__":
     train_item = Convert_and_Save()
     eeg_all_train, label_all_train=load_in_memory(train_dataset,cut=False)
     print(f"Train data shape: EEG={eeg_all_train.shape}, labels={label_all_train.shape}")
-    train_item.process_and_save(ds_info = ds_info,eegdata=eeg_all_train,label=label_all_train,dataset_name=f'{ds_name}_train',path=os.path.join(os.environ['WaveMind_ROOT_PATH_'],'data/Total/data_label.h5'))
+    train_item.process_and_save(ds_info = ds_info,eegdata=eeg_all_train,label=label_all_train,dataset_name=f'{ds_name}_train',path=os.path.join(get_wavemind_root(),'data/Total/data_label.h5'))
     del train_item,eeg_all_train,label_all_train,train_dataset
 
     # Process and save validation dataset
     test_item = Convert_and_Save()
     eeg_all_val,label_all_val=load_in_memory(val_dataset,cut=False)
     print(f"Validation data shape: EEG={eeg_all_val.shape}, labels={label_all_val.shape}")
-    test_item.process_and_save(ds_info = ds_info,eegdata=eeg_all_val,label=label_all_val,dataset_name=f'{ds_name}_test',path=os.path.join(os.environ['WaveMind_ROOT_PATH_'],'data/Total/data_label.h5'))
+    test_item.process_and_save(ds_info = ds_info,eegdata=eeg_all_val,label=label_all_val,dataset_name=f'{ds_name}_test',path=os.path.join(get_wavemind_root(),'data/Total/data_label.h5'))
 
     del test_item,eeg_all_val,label_all_val,val_dataset
 
@@ -58,7 +58,7 @@ if __name__ =="__main__":
     cross_sub = Convert_and_Save()
     eeg_all_test,label_all_test=load_in_memory(test_dataset,cut=False)
     print(f"Cross data shape: EEG={eeg_all_test.shape}, labels={label_all_test.shape}")
-    cross_sub.process_and_save(ds_info = ds_info,eegdata=eeg_all_test,label=label_all_test,dataset_name=f'{ds_name}_cross',path=os.path.join(os.environ['WaveMind_ROOT_PATH_'],'data/Total/data_label.h5'))
+    cross_sub.process_and_save(ds_info = ds_info,eegdata=eeg_all_test,label=label_all_test,dataset_name=f'{ds_name}_cross',path=os.path.join(get_wavemind_root(),'data/Total/data_label.h5'))
     del cross_sub,eeg_all_test,label_all_test,test_dataset
 
     print("SEED dataset processing complete!")

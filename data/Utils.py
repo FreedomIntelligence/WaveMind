@@ -1,18 +1,14 @@
 
-import sys
 import warnings
 import fcntl
 import time
 from abc import ABC, abstractmethod
-from concurrent.futures import ProcessPoolExecutor,as_completed
-from typing import Dict, List
+from typing import Dict
 from transformers import CLIPTextModelWithProjection, AutoTokenizer
 import h5py
 import mne
 
-from joblib import parallel_backend, Parallel, delayed
 from mne import create_info
-from torcheeg.datasets import BaseDataset
 from tqdm import tqdm
 from transformers import CLIPTextModelWithProjection, AutoTokenizer
 
@@ -1215,7 +1211,6 @@ def safe_barrier(timeout_minutes=10, context="unknown"):
     Raises:
         RuntimeError: If barrier times out or encounters an error
     """
-    from datetime import timedelta
     import sys
 
     if torch.distributed.is_initialized():
@@ -1233,3 +1228,45 @@ def safe_barrier(timeout_minutes=10, context="unknown"):
             print(error_msg, file=sys.stderr, flush=True)
 
 
+def get_wavemind_root() -> str:
+    """
+    自动检测 WaveMind 项目根目录。
+
+    通过查找 pyproject.toml 哨兵文件确定项目根路径。
+    若设置了 WaveMind_ROOT_PATH_ 环境变量，优先使用（向后兼容）。
+
+    Returns:
+        项目根目录的绝对路径。
+
+    Raises:
+        RuntimeError: 若找不到 pyproject.toml 且环境变量也未设置。
+    """
+    import os
+    from pathlib import Path
+
+    # 向后兼容：环境变量优先
+    env_val = os.environ.get('WaveMind_ROOT_PATH_', None)
+    if env_val:
+        return env_val
+
+    # 从 data/Utils.py 位置向上搜索
+    current = Path(__file__).resolve().parent  # data/
+    project_root = current.parent  # WaveMind/
+
+    if (project_root / 'pyproject.toml').exists():
+        return str(project_root)
+
+    # 搜索更上层（最多10层）
+    current = project_root
+    for _ in range(10):
+        if (current / 'pyproject.toml').exists():
+            return str(current)
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+
+    raise RuntimeError(
+        "Could not find WaveMind project root. "
+        "Ensure pyproject.toml exists in the project root."
+    )

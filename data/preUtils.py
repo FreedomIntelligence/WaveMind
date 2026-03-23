@@ -7,11 +7,9 @@ import mne
 # import mne_icalabel
 import numpy as np
 import pandas as pd
-import scipy.io as sio
 # from autoreject import get_rejection_threshold
 from filelock import FileLock, Timeout
 from mne import create_info
-from mne.io import RawArray
 from mne.preprocessing import ICA
 import time
 

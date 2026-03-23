@@ -3,7 +3,6 @@ Logger utilities for WaveMind training
 Supports CometML and SwanLab experiment tracking
 """
 
-import logging
 from typing import Optional
 from omegaconf import DictConfig
 from lightning.pytorch.utilities.rank_zero import rank_zero_info

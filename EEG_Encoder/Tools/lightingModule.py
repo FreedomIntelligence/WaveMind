@@ -1,5 +1,4 @@
 import random
-import sys
 import warnings
 from collections import defaultdict
 
@@ -8,8 +7,7 @@ import torch
 import torchmetrics
 from torchmetrics import MetricCollection, Accuracy, AUROC, F1Score
 from tqdm import tqdm
-from transformers import get_constant_schedule_with_warmup, get_cosine_schedule_with_warmup, get_cosine_with_hard_restarts_schedule_with_warmup
-from scipy import signal
+from transformers import get_cosine_schedule_with_warmup, get_cosine_with_hard_restarts_schedule_with_warmup
 
 from EEG_Encoder.Model.baseModel import BIOTUnsupervisedPretrain, AttentionUnsupervisedPretrain
 import lightning as L

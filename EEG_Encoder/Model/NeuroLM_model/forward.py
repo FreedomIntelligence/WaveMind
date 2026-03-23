@@ -10,10 +10,9 @@ This file implements the forward pass for the NeuroLM model, including:
 """
 
 import torch
-import sys
-import os
 from EEG_Encoder.Model.NeuroLM_model.model_neurolm import NeuroLM
 from EEG_Encoder.Model.NeuroLM_model.model import GPTConfig
+from data.Utils import get_wavemind_root
 
 def load_neurolm(checkpoint_path, vq_checkpoint_path=None):
     """
@@ -168,8 +167,8 @@ def generate_text(model, x_eeg, input_chans, input_time, input_mask, max_new_tok
 # Example usage
 if __name__ == '__main__':
     # Load model with both NeuroLM and VQ checkpoints
-    checkpoint_path = f'{os.environ["WaveMind_ROOT_PATH_"]}]/EEG_Encoder/Resource/Checkpoint/ALL/NeuroLM-B.pt'
-    vq_path = f'{os.environ["WaveMind_ROOT_PATH_"]}]/EEG_Encoder/Resource/Checkpoint/ALL/VQ.pt'
+    checkpoint_path = f'{get_wavemind_root()}/EEG_Encoder/Resource/Checkpoint/ALL/NeuroLM-B.pt'
+    vq_path = f'{get_wavemind_root()}/EEG_Encoder/Resource/Checkpoint/ALL/VQ.pt'
     model = load_neurolm(checkpoint_path, vq_checkpoint_path=vq_path)
     # model.eval()
     

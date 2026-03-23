@@ -10,7 +10,7 @@ defaults:
 # ============================================================================
 augmentation:
   train:
-    enable: true
+    enable: false
     normalization_method: "random"
     zscore_epsilon: 1.0e-8
     amplitude_fluctuation_enable: true
@@ -25,7 +25,7 @@ experiment:
   # datasets: ['all']
   datasets: ['thingEEG','TUAB','ImageNetEEG','TUEV','SEED']
   # datasets: ['ImageNetEEG']
-  gpu_number: ['3']
+  gpu_number: ['all']
   # limit_sample: 1e5
 
 training:
@@ -39,7 +39,7 @@ modes:
   save_model: true
 
 paths:
-  HDF5_PATH: ${paths.DATA_DIR}/data_label.h5
+  HDF5_PATH: ${paths.DATA_DIR}/data_label_original.h5
 
 features:
   use_shm: true
@@ -51,6 +51,6 @@ logger:
   type: "swanlab"
   # type: "none"
 
-# advanced:
-#   model_checkpoint_name: ${paths.CHECKPOINT_DIR}/ALL/ATMSmodify_original.pth
+advanced:
+  model_checkpoint_name: ${paths.CHECKPOINT_DIR}/ALL/ATMSmodify_original.pth
 

@@ -8,17 +8,15 @@ import numpy as np
 import torch.nn as nn
 
 from EEG_Encoder.Model.NeuroLM_model.model_neurolm import GPTConfig, NeuroLM
-from einops.layers.torch import Rearrange, Reduce
+from einops.layers.torch import Rearrange
 
-import sys
 from lightning.pytorch.utilities.rank_zero import rank_zero_info, rank_zero_warn
 
 from EEG_Encoder.Model.CommonBlock import Config, iTransformer, Enc_eeg, Proj_eeg, iTransformer_Modify
 
-from EEG_Encoder.Model.CSBrain import CSBrain_Encoder, create_csbrain_encoder
+from EEG_Encoder.Model.CSBrain import create_csbrain_encoder
 
 from braindecode.models import EEGNetv4, ATCNet, EEGConformer, EEGITNet, ShallowFBCSPNet
-import argparse
 
 
 

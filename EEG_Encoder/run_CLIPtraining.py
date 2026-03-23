@@ -8,8 +8,6 @@ logging.basicConfig(
     format='%(message)s'
 )
 import os
-import sys
-import warnings
 # Ensure rank_zero_info works correctly
 logger = logging.getLogger("lightning.pytorch.utilities.rank_zero")
 logger.setLevel(logging.INFO)
@@ -17,7 +15,7 @@ logger.setLevel(logging.INFO)
 from EEG_Encoder.Tools.lightingModule import LitModel_CLIP
 import torch
 import hydra
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from lightning.pytorch.callbacks import Callback
 import os
 import lightning as L
@@ -27,7 +25,6 @@ from EEG_Encoder.Config import (
     path_config,
     eeg_config,
 )
-from EEG_Encoder.Config.hydra_configs import WaveMindConfig
 
 torch.autograd.set_detect_anomaly(True)
 torch.set_float32_matmul_precision('medium')
@@ -37,9 +34,8 @@ from lightning.pytorch.strategies import DDPStrategy
 from lightning.pytorch.utilities.rank_zero import rank_zero_info, rank_zero_warn
 
 
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
+from lightning.pytorch.callbacks import EarlyStopping
 
-from EEG_Encoder.Model.CommonBlock import Config
 from EEG_Encoder.Model.baseModel import model_selection
 from EEG_Encoder.Tools.dataBuilder import select_data_module_for_train, CLIPDataModule, CLIPDataset
 from EEG_Encoder.Tools.Utils import get_gpu_with_lowest_utilization

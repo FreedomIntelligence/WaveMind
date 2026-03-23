@@ -1,8 +1,14 @@
 #!/bin/bash
+# Auto-detect project root from script location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"
 
-project_root_path=${WaveMind_ROOT_PATH_}
-
-
+# Backward compatibility: use env var if set, otherwise use auto-detected
+if [ -z "${WaveMind_ROOT_PATH_}" ]; then
+    project_root_path="$PROJECT_ROOT"
+else
+    project_root_path="${WaveMind_ROOT_PATH_}"
+fi
 
 prompt_root_folder=$project_root_path/Data_Engineering
 

@@ -3,21 +3,19 @@ import random
 import re
 from typing import Optional
 import warnings
-from EEG_Encoder.Tools.Utils import EEGNoiseGenerator
 from EEG_Encoder.Tools.baseDataset import BaseEEGDataset
 import h5py
-import h5py.h5f as h5f
 import numpy as np
 import torch
 from PIL import Image
 from lightning import LightningDataModule
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
 from tqdm import tqdm
 from transformers import CLIPVisionModelWithProjection, CLIPTextModelWithProjection, AutoTokenizer, CLIPImageProcessor
 import os
-from data.Utils import safe_barrier
+from data.Utils import safe_barrier, get_wavemind_root
 from lightning.pytorch.utilities.rank_zero import rank_zero_info, rank_zero_warn
 
 import torch
@@ -58,14 +56,10 @@ class CLIPDataset(BaseEEGDataset):
         self.hdf5_file_path = hdf5_file_path
 
 
-        rank_zero_info('--------------------------------')
-        rank_zero_info(f"Dataset Info: Using HDF5 file: {hdf5_file_path}")
-        rank_zero_info(f"Dataset Info: Init Mode: {mode}")
-        rank_zero_info('--------------------------------')
 
 
         self.ground_truth_dir = ground_truth_dir if ground_truth_dir is not None else os.path.join(
-            os.environ['WaveMind_ROOT_PATH_'], 'data/Total/CLIP_groundTruth')
+            get_wavemind_root(), 'data/Total/CLIP_groundTruth')
         self.mode = mode
         self.dataset_name = dataset_name
         self._file = None
@@ -83,14 +77,13 @@ class CLIPDataset(BaseEEGDataset):
         
         if self.__len__() == 0 and mode in ['test', 'train']:
             raise ValueError("No samples found in the dataset")
-        
-        
+
         self.is_in_shm = "/dev/shm" in hdf5_file_path
         if self.is_in_shm:
             rank_zero_info("Using shared memory for HDF5 file")
         else:
             rank_zero_info("Using local HDF5 file")
-        
+
         # Preload dataset references if enabled
         self.group_refs = {}
         if self.preload_metadata:
@@ -133,8 +126,6 @@ class CLIPDataset(BaseEEGDataset):
                     warnings.warn(f"Dataset {target_name} not found, available: {self.total_datasets}")
 
             self.length = len(self.index_to_dataset_entry)
-            rank_zero_info(f"Total len of datasets: {self.length}")
-            rank_zero_info(f"Total datasets: {len(self.total_datasets)}, Used: {self.used_datasets}")
 
     def _add_dataset(self, ds_name, dataset):
         self.used_datasets.append(ds_name)
@@ -142,7 +133,6 @@ class CLIPDataset(BaseEEGDataset):
             self.index_to_dataset_entry.extend([(ds_name, i) for i in range(len(dataset))])
         else:
             sample_size = min(len(dataset), int(self.limit_sample))
-            rank_zero_info(f"Dataset {ds_name} has {len(dataset)} samples, using {sample_size} samples in {self.mode} mode")
             if self.mode in ['test', 'cross']:
                 indices = random.sample(range(len(dataset)), sample_size)
                 self.index_to_dataset_entry.extend([(ds_name, i) for i in indices])
@@ -310,13 +300,11 @@ class CLIPDataset(BaseEEGDataset):
         import time
         
         # Warmup phase to exclude initialization overhead
-        rank_zero_info(f"Running {warmup_iterations} warmup iterations...")
         for i in range(warmup_iterations):
             idx = random.randint(0, len(self) - 1)
             _ = self[idx]
-        
+
         # Benchmark phase
-        rank_zero_info(f"Running {num_iterations} benchmark iterations...")
         total_time = 0.0
         times = []
         
@@ -355,17 +343,6 @@ class CLIPDataset(BaseEEGDataset):
         }
         
         # Print results
-        rank_zero_info("\n=== CLIPDataset Benchmark Results ===")
-        rank_zero_info(f"Total iterations: {results['total_iterations']}")
-        rank_zero_info(f"Average access time: {results['average_time_ms']:.4f} ms")
-        rank_zero_info(f"Min access time: {results['min_time_ms']:.4f} ms")
-        rank_zero_info(f"Max access time: {results['max_time_ms']:.4f} ms")
-        rank_zero_info(f"Median access time: {results['median_time_ms']:.4f} ms")
-        rank_zero_info(f"95th percentile: {results['p95_time_ms']:.4f} ms")
-        rank_zero_info(f"99th percentile: {results['p99_time_ms']:.4f} ms")
-        rank_zero_info(f"Total time: {results['total_time_ms']:.4f} ms")
-        rank_zero_info(f"Throughput: {results['throughput_samples_per_second']:.2f} samples/second")
-        rank_zero_info("=====================================")
         
         return results
 
@@ -387,10 +364,11 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
         )
 
         # Access the paths from the config
-        data_path = f"{os.environ['WaveMind_ROOT_PATH_']}/data/THING-EEG/Data/Preprocessed_data_250Hz"
-        self.img_directory_training = f"{os.environ['WaveMind_ROOT_PATH_']}/data/THING-EEG/images_set/training_images"
-        self.img_directory_test = f"{os.environ['WaveMind_ROOT_PATH_']}/data/THING-EEG/images_set/test_images"
-        self.feature_path=f"{os.environ['WaveMind_ROOT_PATH_']}/data/THING-EEG/Data/Feature"
+        root = get_wavemind_root()
+        data_path = f"{root}/data/THING-EEG/Data/Preprocessed_data_250Hz"
+        self.img_directory_training = f"{root}/data/THING-EEG/images_set/training_images"
+        self.img_directory_test = f"{root}/data/THING-EEG/images_set/test_images"
+        self.feature_path=f"{root}/data/THING-EEG/Data/Feature"
         self.filter_channel=filter_channel
 
 
@@ -418,8 +396,6 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
 
 
         if train_Val_Same_set not in ['none','train','val']:
-            rank_zero_info(train_Val_Same_set)
-            rank_zero_info(type(train_Val_Same_set))
             raise ValueError(f"Invalid train_Val_Same_set: {train_Val_Same_set}")
 
         self.train_Val_Same_set = train_Val_Same_set
@@ -446,13 +422,11 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
             features_filename = os.path.join(self.feature_path,f"{model_type}_features_train.pt") if self.train else os.path.join(self.feature_path,f"{model_type}_features_test.pt")
 
             if os.path.exists(features_filename):
-                rank_zero_info(f"Loading features from {features_filename}")
                 saved_features = torch.load(features_filename,weights_only=False)
                 # self._text_features = saved_features['text_features']
                 self._text_features = None
                 self._img_features = saved_features['img_features']
             else:
-                rank_zero_info(f"Features not found at {features_filename}, computing features...")
 
                 if auto_convert:
                     self.img_processor, self.img_model, self.text_model, self.text_tokenizer = self.get_vl_txt_model()
@@ -530,7 +504,6 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
                 idx = dir.index('_')
                 description = dir[idx+1:]  # Get all content after the first '_'
             except ValueError:
-                rank_zero_info(f"Skipped: {dir} due to no '_' found.")
                 continue
 
             new_description = f"This picture is {description}"
@@ -575,12 +548,9 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
                 images.extend(os.path.join(folder_path, img) for img in all_images)
         else:
             # Handle other cases, such as mismatched lengths of self.classes and self.pictures
-            rank_zero_warn("Error")
+            pass
 
 
-        # rank_zero_info("adap_subject", self.adap_subject)
-        rank_zero_info("Start loading ThingEEG")
-        rank_zero_info("self.subjects", self.subjects)
         train_test = 'train' if self.train else 'test'
         if not (self.subjects==['sub-01', 'sub-02', 'sub-03', 'sub-04', 'sub-05', 'sub-06', 'sub-07', 'sub-08', 'sub-09'] and os.path.exists(os.path.join(self.data_path, f'preprocessed_1-9{train_test}.npz'))):
             for subject in self.subjects:
@@ -650,7 +620,6 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
             # Data tensor: (subjects * classes * 10 * 4) * 17 * 100
             if self.train:
                 data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape[2:])
-                rank_zero_info("data_tensor", data_tensor.shape)
             else:
                 data_tensor = torch.cat(data_list, dim=0).view(-1, *data_list[0].shape)
             label_tensor = torch.cat(label_list, dim=0)
@@ -658,8 +627,6 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
 
                 np.savez(os.path.join(self.data_path, f'preprocessed_1-9{train_test}.npz'), data_tensor=data_tensor.numpy(), label_tensor=label_tensor.numpy(),times=times, ch_names=ch_names)
 
-        else:
-            rank_zero_info("1-9,load cache")
             npz_file=os.path.join(self.data_path, f'preprocessed_1-9{train_test}.npz')
             npz_data=np.load(npz_file)
             data_tensor = torch.from_numpy(npz_data['data_tensor']).float().detach()
@@ -687,7 +654,6 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
 
         self.times = times
         self.ch_names = ch_names
-        rank_zero_info(f"Data tensor shape: {data_tensor.shape}, label tensor shape: {label_tensor.shape}, text length: {len(texts)}, image length: {len(images)}")
         
         
         
@@ -716,11 +682,8 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
         return extracted_data
 
     def Textencoder(self, text):
-        rank_zero_info("start convert text")
-
         self.text_model.to('cuda')
         text_inputs = text
-        rank_zero_info("text_inputs", len(text_inputs))
 
         # Use the CLIP model to encode text
         text_features = []
@@ -734,13 +697,11 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
                     batch_text_features = batch_text_features.unsqueeze(1)
                 text_features.append(batch_text_features.cpu())
         text_features = torch.cat(text_features, dim=0)
-        rank_zero_info("text_features", text_features.shape)
         self.text_model.to('cpu')
 
         return text_features
 
     def ImageEncoder(self, images):
-        rank_zero_info("start convert image")
         batch_size = 20  # Set to an appropriate value
         image_features_list = []
 
@@ -758,12 +719,10 @@ class CLIPDataset_ThingEEG(BaseEEGDataset):
             image_features_list.append(batch_image_features.cpu())
 
         image_features = torch.cat(image_features_list, dim=0)
-        rank_zero_info("image_features", image_features.shape)
         self.img_model.to('cpu')
         return image_features
 
     def CaptionEncoder(self):
-        rank_zero_info("Start captioning")
         image_pattern = re.compile(r'\b(image|picture|photo|img|photograph|snapshot)s?\b', re.IGNORECASE)
         from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
         model_path='/mnt/nvme0n1/model_dir/Qwen2.5-VL-7B-Instruct'
@@ -1075,10 +1034,7 @@ class CLIPDataModule(LightningDataModule):
                 raise "ERROR"
 
         elif self.task=='BCI':
-            
-            
-            rank_zero_info(f"Setup BCI dataset from: {self.hdf5_file_path}")
-            
+
             tmp_hdf5_file_path=self.setup_shared_memory(self.hdf5_file_path)
         
             
@@ -1143,13 +1099,7 @@ class CLIPDataModule(LightningDataModule):
                 self.test_dataset.change_sample_rate(self.sample_rate)
         
         
-        rank_zero_info("*****************************")
-        rank_zero_info('DM Setup done')
-        rank_zero_info("Data Statistic")
-        rank_zero_info(f"Train dataset length: {len(self.train_dataset)}")
-        rank_zero_info(f"Test dataset length: {len(self.val_dataset)}")
-        rank_zero_info(f"Cross dataset length: {len(self.test_dataset) if self.test_dataset is not None else 0}")
-        rank_zero_info("*****************************")
+        rank_zero_info(f"DM Setup done | Train: {len(self.train_dataset)}, Test: {len(self.val_dataset)}, Cross: {len(self.test_dataset) if self.test_dataset is not None else 0}")
 
     @property
     def dataset_names(self):
@@ -1197,14 +1147,9 @@ class CLIPDataModule(LightningDataModule):
             shm_available = shm_usage.free
             # Reserve 20% safety buffer
             safe_available_mem = shm_available * 0.8
-            
-            rank_zero_info(f"[Memory Check] File size: {file_size/1024**3:.2f} GB, "
-                f"SHM available: {shm_available/1024**3:.2f} GB, "
-                f"Safe limit: {safe_available_mem/1024**3:.2f} GB")
-            
+
             if file_size > safe_available_mem:
-                rank_zero_warn(f"[Memory Warning] File size exceeds safe shared memory limit. "
-                    f"Skipping shared memory setup.")
+                rank_zero_warn(f"[Memory Warning] File size ({file_size/1024**3:.2f} GB) exceeds safe shared memory limit. Skipping SHM.")
                 return hdf5_path
         except Exception as e:
             rank_zero_warn(f"[Memory Check Error] {str(e)}. Proceeding without size check.")
@@ -1217,8 +1162,6 @@ class CLIPDataModule(LightningDataModule):
         if is_distributed:
             rank = torch.distributed.get_rank()
             world_size = torch.distributed.get_world_size()
-        else:
-            rank_zero_info("[Info] Running in single-process mode (non-distributed)")
         
         # Only rank 0 performs the copy operation
         if rank == 0:
@@ -1229,19 +1172,13 @@ class CLIPDataModule(LightningDataModule):
             try:
                 # Create and acquire exclusive lock (blocks if another process holds it)
                 with open(lock_file_path, 'w') as lock_fd:
-                    rank_zero_info(f"[Rank0] Acquiring file lock: {lock_file_path}")
                     fcntl.flock(lock_fd.fileno(), fcntl.LOCK_EX)
-                    rank_zero_info(f"[Rank0] Lock acquired successfully")
 
                     # Double-check file existence inside lock (atomic with lock)
                     if not os.path.exists(shm_path):
-                        rank_zero_info(f"[Rank0] Shared memory file not exists: {shm_path}")
-                        rank_zero_info(f"[Rank0] Copying {hdf5_path} to shared memory ({shm_path})...")
                         try:
                             # Efficient copy using Python with progress display
-                            rank_zero_info(f"[Rank0] Starting copy with progress display...")
                             self._copy_file_with_progress(hdf5_path, shm_path)
-                            rank_zero_info(f"[Rank0] Copy completed successfully")
 
                             # Verify file integrity after copy
                             if not os.path.exists(shm_path):
@@ -1252,20 +1189,12 @@ class CLIPDataModule(LightningDataModule):
                             if file_size_original != file_size_shm:
                                 raise RuntimeError(f"File size mismatch: original={file_size_original}, shm={file_size_shm}")
 
-                            rank_zero_info(f"[Rank0] File integrity verified (size: {file_size_shm/1024**3:.2f} GB)")
-
                         except Exception as e:
                             rank_zero_warn(f"[Rank0] Copy failed: {str(e)}. Falling back to original path.")
                             # Clean up incomplete file
                             if os.path.exists(shm_path):
                                 os.remove(shm_path)
-                                rank_zero_info(f"[Rank0] Removed incomplete shared memory file")
                             return hdf5_path
-                    else:
-                        rank_zero_info(f"[Rank0] Shared memory file already exists: {shm_path}")
-
-                    # Lock automatically released when exiting 'with' block
-                    rank_zero_info(f"[Rank0] Releasing file lock")
 
             except Exception as e:
                 rank_zero_warn(f"[Rank0] File locking error: {str(e)}. Falling back to original path.")
@@ -1282,7 +1211,6 @@ class CLIPDataModule(LightningDataModule):
         # Synchronize all processes (essential for multi-GPU)
         if is_distributed:
             safe_barrier(timeout_minutes=30, context="shared_memory_setup")
-            rank_zero_info(f"[Rank{rank}] Synchronized with other {world_size-1} processes after memory setup")
         
         # Verify file accessibility across all processes
         try:
@@ -1290,10 +1218,8 @@ class CLIPDataModule(LightningDataModule):
             file_ok = True
             if rank == 0:
                 if not os.path.exists(shm_path):
-                    rank_zero_warn(f"[Rank0] Shared memory file missing: {shm_path}")
                     file_ok = False
                 elif not os.access(shm_path, os.R_OK):
-                    rank_zero_warn(f"[Rank0] No read access to: {shm_path}")
                     file_ok = False
             
             # In distributed mode, ensure all ranks agree on file status
@@ -1310,10 +1236,8 @@ class CLIPDataModule(LightningDataModule):
             # delete possibly corrupted shm file
             if rank == 0 and os.path.exists(shm_path):
                 os.remove(shm_path)
-                rank_zero_warn(f"[Rank0] Removed corrupted shared memory file: {shm_path}")
             return hdf5_path
-        
-        rank_zero_info(f"[Rank{rank}] Using shared memory path: {shm_path}")
+
         return shm_path
         
     
@@ -1395,9 +1319,6 @@ class CLIPDataModule(LightningDataModule):
             try:
                 self._file.close()
                 self._file = None
-                # Log from all ranks to verify proper cleanup
-                current_rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
-                rank_zero_info(f"[Rank{current_rank}] Closed HDF5 file handle")
             except Exception as e:
                 import warnings
                 warnings.warn(f"Error closing HDF5 file: {str(e)}")
@@ -1406,8 +1327,6 @@ class CLIPDataModule(LightningDataModule):
         if torch.distributed.is_initialized():
             try:
                 safe_barrier(timeout_minutes=1, context="cleanup_before_shm_removal")
-                if os.environ.get('LOCAL_RANK', '0') == '0':
-                    rank_zero_info("[Rank0] All ranks synchronized after closing file handles")
             except Exception as e:
                 import warnings
                 warnings.warn(f"Barrier timeout during cleanup: {str(e)}")
@@ -1418,7 +1337,6 @@ class CLIPDataModule(LightningDataModule):
                 if self.shm_path is not None and os.path.exists(self.shm_path) and self.auto_clean_shm_when_exit:
                     try:
                         os.remove(self.shm_path)
-                        rank_zero_info(f"[Rank0] Removed shared memory file: {self.shm_path}")
                     except Exception as e:
                         import warnings
                         warnings.warn(f"Failed to remove SHM file: {str(e)}")
@@ -1431,7 +1349,6 @@ class CLIPDataModule(LightningDataModule):
                 
                 
 def select_data_module_for_train(dataset:str,limit_sample:int,load_dir:str,augmentation_config=None,use_aug=None,hdf5_path=None,num_workers=64,use_shm=False,use_dynamic_sampling=False,thing_specific_sub=None,auto_clean_shm_when_exit=True,batch_size=512):
-    import os
 
     # Handle OmegaConf ListConfig conversion (fix for Hydra config parsing)
     from omegaconf import ListConfig
@@ -1503,61 +1420,33 @@ class dynamicCLIPDataset(CLIPDataset):
         Compute class weights based on the distribution of samples across datasets.
         """
         if self.class_weights is not None and not self.force_recompute_weights:
-            rank_zero_info("Using predefined class weights")
             return
-        
+
         # Check if weights are already saved
         if self.weight_file and os.path.exists(self.weight_file) and not self.force_recompute_weights:
             try:
                 self.class_weights = torch.load(self.weight_file)
-                rank_zero_info(f"Loaded class weights from {self.weight_file}")
-                
-                # Calculate dataset counts for weight statistics
-                dataset_counts = Counter()
-                for ds_name, _ in self.index_to_dataset_entry:
-                    dataset_counts[ds_name] += 1
-
-                # Print weight statistics regardless of weight source
-                rank_zero_info("Weight Statistics:")
-                for ds_name, weight in self.class_weights.items():
-                    count = dataset_counts.get(ds_name, 0)
-                    rank_zero_info(f"[Weight Statistic] Dataset: {ds_name}, Count: {count}, Weight: {weight:.4f}")
-
-                rank_zero_info(f"Loaded weights for {len(self.class_weights)} datasets")
                 return
             except Exception as e:
                 rank_zero_warn(f"Failed to load weights from {self.weight_file}: {e}")
 
-        rank_zero_info("Computing class weights dynamically...")
-        
         # Count samples per dataset
         dataset_counts = Counter()
         for ds_name, _ in self.index_to_dataset_entry:
             dataset_counts[ds_name] += 1
-        
+
         # Compute weights (inverse frequency)
         total_samples = sum(dataset_counts.values())
         self.class_weights = {}
-        
+
         for ds_name, count in dataset_counts.items():
             # Weight is inversely proportional to frequency
             self.class_weights[ds_name] = total_samples / (len(dataset_counts) * count)
-        
+
         # Save weights if file path is provided
         if self.weight_file:
             os.makedirs(os.path.dirname(self.weight_file), exist_ok=True)
             torch.save(self.class_weights, self.weight_file)
-            rank_zero_info(f"Saved class weights to {self.weight_file}")
-
-
-        # Print weight of each class
-        rank_zero_info("Weight Statistics:")
-        for ds_name, weight in self.class_weights.items():
-            count = dataset_counts.get(ds_name, 0)
-            rank_zero_info(f"[Weight Statistic] Dataset: {ds_name}, Count: {count}, Weight: {weight:.4f}")
-
-
-        rank_zero_info(f"Computed weights for {len(self.class_weights)} datasets")
 
     def _apply_sampling_strategy(self):
         """

@@ -32,7 +32,6 @@ try:
         ModeConfig,
         FeatureConfig,
         AdvancedConfig,
-        register_configs,
     )
     HYDRA_AVAILABLE = True
 except ImportError:

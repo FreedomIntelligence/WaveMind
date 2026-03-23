@@ -193,6 +193,7 @@ def unpad_image(tensor, original_size):
     return unpadded_tensor
 
 import torch.nn.functional as F
+from data.Utils import get_wavemind_root
 class LlavaMetaForCausalLM(ABC):
     def __init__(self,*args, **kwargs):
         super().__init__()
@@ -200,9 +201,11 @@ class LlavaMetaForCausalLM(ABC):
         import os
         #############################
         
-        if os.environ['WaveMind_ROOT_PATH_'] is None or os.environ['WaveMind_ROOT_PATH_'] == "":
-            raise ValueError("Please set the WaveMind_ROOT_PATH_ environment variable to the root path of the WaveMind project.")
-        CLIP_path=os.path.join(os.environ['WaveMind_ROOT_PATH_'],"data/Total/CLIP_groundTruth") 
+        if os.environ.get('WaveMind_ROOT_PATH_') is None or os.environ.get('WaveMind_ROOT_PATH_') == "":
+            root = get_wavemind_root()
+        else:
+            root = os.environ['WaveMind_ROOT_PATH_']
+        CLIP_path=os.path.join(root,"data/Total/CLIP_groundTruth") 
         
         self.DBtool=DBsearch(CLIP_path=CLIP_path)
         ##########################

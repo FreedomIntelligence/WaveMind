@@ -24,8 +24,16 @@ run_python_script() {
     echo "----------------------------------------"
 }
 
-# get 'WaveMind_ROOT_PATH_'  and concat with Data_Engineering/data/WaveMind_Bench
-TARGET_PATH="${WaveMind_ROOT_PATH_}/Data_Engineering/data/WaveMind_Bench"
+# Auto-detect project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../" && pwd)"
+
+# get WaveMind_ROOT_PATH_ for backward compatibility, otherwise use auto-detected
+if [ -z "${WaveMind_ROOT_PATH_}" ]; then
+    TARGET_PATH="${PROJECT_ROOT}/Data_Engineering/data/WaveMind_Bench"
+else
+    TARGET_PATH="${WaveMind_ROOT_PATH_}/Data_Engineering/data/WaveMind_Bench"
+fi
 echo "Target path to delete: $TARGET_PATH"
 rm -rf "$TARGET_PATH"
 echo "Deleted: $TARGET_PATH"
